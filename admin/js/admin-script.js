@@ -181,6 +181,165 @@ function normalizePhone(phone) {
     return p;
 }
 
+/**
+ * Process referral reward when admin confirms order
+ * @param {string} phone - Customer phone number (0xxx format)
+ */
+async function processReferralReward(phone) {
+    try {
+        console.log('🔍 Checking for pending referral reward for phone:', phone);
+        
+        // 1. Find user by phone
+        // Convert 0xxx → 8xxx for users sheet search
+        const phone8xxx = phone.startsWith('0') ? phone.substring(1) : phone;
+        
+        const userRes = await fetch(`${API_URL}/search?sheet=users&whatsapp_no=${phone8xxx}`);
+        const users = await userRes.json();
+        
+        if (!users || users.length === 0) {
+            console.log('⚠️ User not found in users sheet');
+            return;
+        }
+        
+        const user = users[0];
+        console.log('✅ User found:', user.name);
+        
+        // 2. Check if user has referrer_code
+        if (!user.referrer_code) {
+            console.log('⚠️ User has no referrer_code, skipping referral reward');
+            return;
+        }
+        
+        console.log('✅ User has referrer:', user.referrer_code);
+        
+        // 3. Find pending referral record
+        const refRes = await fetch(`${API_URL}/search?sheet=referrals&referrer_code=${user.referrer_code}&referred_user_id=${user.user_id}`);
+        const referrals = await refRes.json();
+        
+        if (!referrals || referrals.length === 0) {
+            console.log('⚠️ No referral record found');
+            return;
+        }
+        
+        const referral = referrals[0];
+        console.log('✅ Referral found:', referral.referral_id, 'Status:', referral.status);
+        
+        // 4. Check if already completed
+        if (referral.status === 'completed') {
+            console.log('✅ Referral already completed, skipping');
+            return;
+        }
+        
+        // 5. Find referrer
+        const referrerRes = await fetch(`${API_URL}/search?sheet=users&referral_code=${user.referrer_code}`);
+        const referrers = await referrerRes.json();
+        
+        if (!referrers || referrers.length === 0) {
+            console.log('⚠️ Referrer not found');
+            return;
+        }
+        
+        const referrer = referrers[0];
+        console.log('✅ Referrer found:', referrer.name);
+        
+        // 6. Give reward to referrer (update user_points)
+        const referrerPhone0xxx = '0' + referrer.whatsapp_no; // Convert 8xxx → 0xxx
+        
+        const pointsRes = await fetch(`${API_URL}/search?sheet=user_points&phone=${referrerPhone0xxx}`);
+        const pointsData = await pointsRes.json();
+        
+        let currentPoints = 0;
+        let pointUpdateSuccess = false;
+        
+        if (pointsData && pointsData.length > 0) {
+            // Update existing record
+            currentPoints = parseFloat(pointsData[0].points) || 0;
+            const newPoints = currentPoints + 10000;
+            
+            const updateRes = await fetch(`${API_URL}/phone/${referrerPhone0xxx}?sheet=user_points`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    data: { 
+                        points: newPoints,
+                        last_updated: new Date().toLocaleString('id-ID')
+                    } 
+                })
+            });
+            pointUpdateSuccess = updateRes.ok;
+            
+            if (pointUpdateSuccess) {
+                console.log(`✅ Referrer points updated: ${referrer.name} now has ${newPoints} points`);
+            }
+        } else {
+            // Create new record
+            const createRes = await fetch(`${API_URL}?sheet=user_points`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    data: [{ 
+                        phone: referrerPhone0xxx,
+                        points: 10000,
+                        last_updated: new Date().toLocaleString('id-ID')
+                    }]
+                })
+            });
+            pointUpdateSuccess = createRes.ok;
+            
+            if (pointUpdateSuccess) {
+                console.log(`✅ Referrer points created: ${referrer.name} now has 10000 points`);
+            }
+        }
+        
+        // 7. Update referral status to completed
+        if (pointUpdateSuccess) {
+            // Try PATCH first
+            const updateRefRes = await fetch(`${API_URL}/referrer_code/${user.referrer_code}/referred_user_id/${user.user_id}?sheet=referrals`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    data: { 
+                        status: 'completed',
+                        completed_at: new Date().toLocaleString('id-ID')
+                    } 
+                })
+            });
+            
+            if (updateRefRes.ok) {
+                console.log('✅ Referral status updated to completed');
+            } else {
+                // Fallback: DELETE + INSERT
+                console.log('🔄 PATCH failed, trying DELETE + INSERT');
+                
+                await fetch(`${API_URL}/referral_id/${referral.referral_id}?sheet=referrals`, {
+                    method: 'DELETE'
+                });
+                
+                await fetch(`${API_URL}?sheet=referrals`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        data: [{
+                            ...referral,
+                            status: 'completed',
+                            completed_at: new Date().toLocaleString('id-ID')
+                        }]
+                    })
+                });
+                
+                console.log('✅ Referral status updated via DELETE+INSERT');
+            }
+            
+            console.log('🎉 Referral reward processed successfully!');
+        } else {
+            console.error('❌ Failed to update referrer points');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error processing referral reward:', error);
+    }
+}
+
 async function updateOrderStatus(id, newStatus) {
     if (!newStatus) return;
     
@@ -246,6 +405,10 @@ async function updateOrderStatus(id, newStatus) {
                             headers: { 'Content-Type': 'application/json' },
                             body:JSON.stringify({ data: { point_processed: 'Yes' } })
                         });
+                        
+                        // Check and process pending referral reward
+                        await processReferralReward(phone);
+                        
                         showAdminToast(`Status diperbarui & +${pointsToAdd} poin diberikan ke ${phone}`, 'success');
                     } else {
                         showAdminToast('Status diperbarui, tapi gagal update poin.', 'warning');

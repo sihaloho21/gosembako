@@ -130,13 +130,17 @@ class ReferralOrderIntegration {
             
             if (isFirstOrder && user.referrer_code) {
                 console.log('✅ First order detected with referrer:', user.referrer_code);
-                await this.completeReferralAndGiveReward(user);
-                console.log('✅ Referral reward processed');
+                
+                // Create referral record with status: pending
+                // Reward will be given when admin confirms order
+                await this.createPendingReferral(user);
+                console.log('✅ Referral record created (pending admin confirmation)');
                 
                 return {
                     success: true,
                     isFirstOrder: true,
-                    referralProcessed: true
+                    referralProcessed: false,
+                    referralPending: true
                 };
             }
 
@@ -145,7 +149,8 @@ class ReferralOrderIntegration {
             return {
                 success: true,
                 isFirstOrder: isFirstOrder,
-                referralProcessed: false
+                referralProcessed: false,
+                referralPending: false
             };
 
         } catch (error) {
@@ -317,6 +322,35 @@ class ReferralOrderIntegration {
     /**
      * Complete referral and give reward to referrer
      * @param {Object} referredUser - The user who just made first purchase
+    /**
+     * Create pending referral record (to be completed when admin confirms)
+     * @param {Object} referredUser - The user who just made first purchase
+     */
+    async createPendingReferral(referredUser) {
+        try {
+            const referrerCode = referredUser.referrer_code;
+            const referredUserId = referredUser.user_id;
+            const referredName = referredUser.name;
+
+            // Check if referral already exists
+            const refResponse = await this.fetchWithRetry(
+                `${this.apiUrl}/search?sheet=referrals&referrer_code=${referrerCode}&referred_user_id=${referredUserId}`
+            );
+            const existingReferrals = await refResponse.json();
+
+            if (existingReferrals && existingReferrals.length > 0) {
+                console.log('⚠️ Referral already exists, skipping creation');
+                return;
+            }
+
+            // Create referral record with status: pending
+            await this.createReferralRecord(referrerCode, referredUserId, referredName);
+            console.log('✅ Pending referral created (waiting for admin confirmation)');
+        } catch (error) {
+            console.error('❌ Error creating pending referral:', error);
+        }
+    }
+
      */
     async completeReferralAndGiveReward(referredUser) {
         try {
