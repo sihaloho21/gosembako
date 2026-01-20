@@ -194,7 +194,7 @@ async function handleRegistration(event) {
         await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sheet: 'users', data: newUser })
+            body: JSON.stringify({ sheet: 'users', data: [newUser] })
         });
         
         // If user came from referral, create referral record
@@ -214,7 +214,7 @@ async function handleRegistration(event) {
             await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sheet: 'referrals', data: referralData })
+                body: JSON.stringify({ sheet: 'referrals', data: [referralData] })
             });
             
             // Clear referral code from localStorage

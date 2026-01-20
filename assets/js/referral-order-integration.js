@@ -100,7 +100,7 @@ class ReferralOrderIntegration {
             await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sheet: 'users', data: newUser })
+                body: JSON.stringify({ sheet: 'users', data: [newUser] })
             });
 
             // If user came from referral, create referral record
@@ -145,7 +145,7 @@ class ReferralOrderIntegration {
             await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sheet: 'referrals', data: referralData })
+                body: JSON.stringify({ sheet: 'referrals', data: [referralData] })
             });
 
             console.log('✅ Referral record created:', referralId);

@@ -1299,7 +1299,8 @@ function sendToWA() {
     };
 
     // Use ApiService to log order (no caching for POST)
-    ApiService.post('?sheet=orders', [orderData])
+    // SheetDB requires data to be wrapped in {data: [...]}
+    ApiService.post('?sheet=orders', { data: [orderData] })
         .then(data => {
             console.log('Order logged to spreadsheet:', data);
             
@@ -1551,7 +1552,7 @@ async function claimReward(rewardId) {
         // 4. Record claim in claims sheet
         const claimId = 'CLM-' + Date.now().toString().slice(-6);
         await ApiService.post('?sheet=claims', {
-            data: {
+            data: [{
                 id: claimId,
                 phone: phone,
                 nama: customerName,
@@ -1559,7 +1560,7 @@ async function claimReward(rewardId) {
                 poin: requiredPoints,
                 status: 'Menunggu',
                 tanggal: new Date().toLocaleString('id-ID')
-            }
+            }]
         });
 
         // 5. Update local state and UI
@@ -1766,7 +1767,7 @@ async function processClaimReward(rewardId, customerName) {
         // 3. Record claim in claims sheet
         const claimId = 'CLM-' + Date.now().toString().slice(-6);
         await ApiService.post('?sheet=claims', {
-            data: {
+            data: [{
                 id: claimId,
                 phone: phone,
                 nama: customerName,
@@ -1774,7 +1775,7 @@ async function processClaimReward(rewardId, customerName) {
                 poin: requiredPoints,
                 status: 'Menunggu',
                 tanggal: new Date().toLocaleString('id-ID')
-            }
+            }]
         });
 
         // 4. Update local state and UI
