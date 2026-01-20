@@ -135,6 +135,11 @@ class PromotionalBannerCarousel {
                           (banner.subtitle && banner.subtitle.trim() !== '') || 
                           (banner.cta_text && banner.cta_text.trim() !== '');
         
+        // Log deep link detection for debugging
+        if (hasLink && banner.cta_url.startsWith('#produk-')) {
+            console.log(`[Banner] Creating deep link for: ${banner.title || 'Untitled'} -> ${banner.cta_url}`);
+        }
+        
         return `
             <div class="promo-carousel-slide" data-index="${index}">
                 <div class="promo-banner-card">

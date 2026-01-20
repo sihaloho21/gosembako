@@ -33,6 +33,19 @@ let selectedVariation = null;
 
 // calculateGajianPrice is now handled in assets/js/payment-logic.js
 
+/**
+ * Creates a URL-friendly slug from a string.
+ * e.g., "Paket Hemat Beras 5kg" -> "paket-hemat-beras-5kg"
+ */
+function createSlug(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .trim()
+        .replace(/[-\s]+/g, '-'); // Replace spaces and multiple hyphens with single hyphen
+}
+
 async function fetchProducts() {
     try {
         // Use ApiService with caching (5 minutes)
@@ -71,7 +84,8 @@ async function fetchProducts() {
                 stok: parseInt(p.stok) || 0,
                 category: category,
                 deskripsi: (p.deskripsi && p.deskripsi.trim() !== "") ? p.deskripsi : defaultDesc,
-                variations: variations
+                variations: variations,
+                slug: createSlug(p.nama) // Add slug for deep linking
             };
         });
         filterProducts();
@@ -85,6 +99,18 @@ async function fetchProducts() {
             grid.innerHTML = '<p class="text-center col-span-full text-red-500">Gagal memuat produk. Silakan coba lagi nanti.</p>';
         }
     }
+}
+
+/**
+ * Finds a product in the allProducts array by its slug.
+ * @param {string} slug - The URL-friendly slug of the product
+ * @returns {Object|null} The product object if found, null otherwise
+ */
+function findProductBySlug(slug) {
+    if (!slug || !allProducts || allProducts.length === 0) {
+        return null;
+    }
+    return allProducts.find(p => p.slug === slug);
 }
 
 function renderProducts(products) {
@@ -1958,3 +1984,51 @@ function closeQRISModal() {
         modal.classList.add('hidden');
     }
 }
+
+// ============ DEEP LINK HANDLER ============
+/**
+ * Handles deep linking to a product modal via URL hash.
+ * e.g., #produk-paket-hemat
+ */
+async function handleDeepLink() {
+    console.log('[DeepLink] Checking for hash:', window.location.hash);
+    
+    // Wait for products to be loaded if not yet
+    if (allProducts.length === 0) {
+        console.log('[DeepLink] Products not loaded yet, waiting...');
+        // Wait a bit and try again
+        setTimeout(handleDeepLink, 500);
+        return;
+    }
+
+    if (window.location.hash) {
+        const hash = window.location.hash.substring(1); // Remove # symbol
+        console.log('[DeepLink] Hash found:', hash);
+
+        if (hash.startsWith('produk-')) {
+            const productSlug = hash.substring(7); // Remove "produk-" prefix
+            console.log('[DeepLink] Looking for product with slug:', productSlug);
+
+            const product = findProductBySlug(productSlug);
+
+            if (product) {
+                console.log('[DeepLink] Product found:', product.nama);
+                // Give a small delay to ensure UI is ready
+                setTimeout(() => {
+                    showDetail(product);
+                }, 500); // 500ms delay
+            } else {
+                console.warn('[DeepLink] Product with slug not found:', productSlug);
+            }
+        }
+    }
+}
+
+// Handle hash change after page load (when user clicks banner while already on page)
+window.addEventListener('hashchange', handleDeepLink, false);
+
+// Add deep link handler to existing DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for products to load first
+    setTimeout(handleDeepLink, 1000);
+});
