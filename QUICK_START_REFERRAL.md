@@ -13,7 +13,7 @@ Buka Google Sheets Anda:
 https://docs.google.com/spreadsheets/d/174qAwA2hddfQOFUFDx7czOtpRlD9WUiiIaf6Yao8WRc/edit
 ```
 
-Buat **3 sheet baru** dengan nama dan header berikut:
+Buat **2 sheet baru** dengan nama dan header berikut:
 
 #### Sheet: `users`
 ```
@@ -26,9 +26,9 @@ id | referral_id | referrer_code | referred_user_id | referred_name | status | r
 ```
 
 #### Sheet: `orders`
-```
-id | order_id | user_id | whatsapp_no | order_details | total_amount | payment_method | created_at
-```
+**✅ SUDAH ADA - Tidak perlu dibuat!**
+
+Sheet `orders` sudah ada di spreadsheet Anda. Sistem referral akan menggunakan sheet existing ini.
 
 **⚠️ PENTING:** Nama sheet harus persis seperti di atas (huruf kecil semua).
 
@@ -84,7 +84,7 @@ Setelah deploy selesai, test:
 
 - [ ] Sheet `users` sudah dibuat dengan header yang benar
 - [ ] Sheet `referrals` sudah dibuat dengan header yang benar
-- [ ] Sheet `orders` sudah dibuat dengan header yang benar
+- [ ] Sheet `orders` sudah ada (existing, tidak perlu dibuat baru)
 - [ ] Test akses SheetDB berhasil (return `[]`)
 - [ ] Deploy Netlify selesai
 - [ ] Test referral link di production berhasil

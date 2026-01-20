@@ -1,6 +1,7 @@
 /**
  * Referral Order Integration
  * Handles order tracking and automatic reward distribution
+ * UPDATED: Uses existing orders sheet structure (phone-based)
  */
 
 class ReferralOrderIntegration {
@@ -17,60 +18,41 @@ class ReferralOrderIntegration {
 
     /**
      * Process order and handle referral rewards
-     * Call this function after user confirms order via WhatsApp
-     * @param {Object} orderData - Order information
-     * @param {string} orderData.whatsappNo - Customer WhatsApp number
-     * @param {Array} orderData.items - Cart items
-     * @param {number} orderData.totalAmount - Total order amount
-     * @param {string} orderData.paymentMethod - Payment method (cash/gajian)
+     * Call this function after order is logged to existing orders sheet
+     * @param {string} phone - Customer phone number (normalized)
+     * @param {string} customerName - Customer name
      */
-    async processOrder(orderData) {
+    async processOrder(phone, customerName) {
         try {
+            console.log('🔄 Processing referral for phone:', phone);
+            
             // 1. Check if user exists, if not create user
-            const user = await this.findOrCreateUser(orderData.whatsappNo);
+            const user = await this.findOrCreateUser(phone, customerName);
             
             if (!user) {
                 console.error('Failed to find or create user');
                 return { success: false, message: 'User creation failed' };
             }
 
-            // 2. Create order record
-            const orderId = 'ORD-' + Date.now();
-            const orderDetails = orderData.items.map(item => 
-                `${item.nama} x${item.quantity}`
-            ).join(', ');
-
-            const orderRecord = {
-                order_id: orderId,
-                user_id: user.user_id,
-                whatsapp_no: orderData.whatsappNo,
-                order_details: orderDetails,
-                total_amount: orderData.totalAmount,
-                payment_method: orderData.paymentMethod,
-                created_at: new Date().toISOString()
-            };
-
-            await fetch(this.apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sheet: 'orders', data: orderRecord })
-            });
-
-            console.log('✅ Order recorded:', orderId);
-
-            // 3. Check if this is first order and process referral reward
-            const isFirstOrder = await this.isFirstOrder(user.user_id);
+            // 2. Check if this is first order
+            const isFirstOrder = await this.isFirstOrder(phone);
             
             if (isFirstOrder && user.referrer_code) {
+                console.log('✅ First order detected with referrer:', user.referrer_code);
                 await this.completeReferralAndGiveReward(user);
                 console.log('✅ Referral reward processed');
+                
+                return {
+                    success: true,
+                    isFirstOrder: true,
+                    referralProcessed: true
+                };
             }
 
             return {
                 success: true,
-                orderId: orderId,
                 isFirstOrder: isFirstOrder,
-                referralProcessed: isFirstOrder && user.referrer_code
+                referralProcessed: false
             };
 
         } catch (error) {
@@ -80,31 +62,35 @@ class ReferralOrderIntegration {
     }
 
     /**
-     * Find user by WhatsApp number or create new user
-     * @param {string} whatsappNo - WhatsApp number
+     * Find user by phone number or create new user
+     * @param {string} phone - Phone number (normalized)
+     * @param {string} name - Customer name
      * @returns {Object|null} User object or null
      */
-    async findOrCreateUser(whatsappNo) {
+    async findOrCreateUser(phone, name) {
         try {
-            // Search for existing user
-            const response = await fetch(`${this.apiUrl}/search?sheet=users&whatsapp_no=${whatsappNo}`);
+            // Search for existing user by WhatsApp number
+            const response = await fetch(`${this.apiUrl}/search?sheet=users&whatsapp_no=${phone}`);
             const users = await response.json();
 
             if (users && users.length > 0) {
+                console.log('✅ Existing user found:', users[0].name);
                 return users[0];
             }
 
             // User not found - check if there's a pending referral code
             const referrerCode = localStorage.getItem('sembako_referral_code') || '';
             
-            // Create new user (without name, will be updated later if needed)
+            console.log('📝 Creating new user...');
+            
+            // Create new user
             const userId = 'USR-' + Date.now();
-            const referralCode = this.generateReferralCode(whatsappNo);
+            const referralCode = this.generateReferralCode(name);
 
             const newUser = {
                 user_id: userId,
-                name: 'Customer-' + whatsappNo.slice(-4), // Temporary name
-                whatsapp_no: whatsappNo,
+                name: name,
+                whatsapp_no: phone,
                 referral_code: referralCode,
                 referrer_code: referrerCode,
                 total_points: 0,
@@ -119,7 +105,9 @@ class ReferralOrderIntegration {
 
             // If user came from referral, create referral record
             if (referrerCode) {
-                await this.createReferralRecord(referrerCode, userId, newUser.name);
+                await this.createReferralRecord(referrerCode, userId, name);
+                console.log('✅ Referral record created for code:', referrerCode);
+                
                 // Clear referral code after use
                 localStorage.removeItem('sembako_referral_code');
                 localStorage.removeItem('sembako_referrer_name');
@@ -168,14 +156,19 @@ class ReferralOrderIntegration {
 
     /**
      * Check if this is user's first order
-     * @param {string} userId - User ID
+     * Uses existing orders sheet with phone column
+     * @param {string} phone - Phone number
      * @returns {boolean} True if first order
      */
-    async isFirstOrder(userId) {
+    async isFirstOrder(phone) {
         try {
-            const response = await fetch(`${this.apiUrl}/search?sheet=orders&user_id=${userId}`);
+            const response = await fetch(`${this.apiUrl}/search?sheet=orders&phone=${phone}`);
             const orders = await response.json();
-            return orders && orders.length === 1; // True if only 1 order (the one just created)
+            
+            const orderCount = orders && orders.length > 0 ? orders.length : 0;
+            console.log(`📊 Order count for ${phone}: ${orderCount}`);
+            
+            return orderCount === 1; // True if only 1 order (the one just created)
         } catch (error) {
             console.error('Error checking first order:', error);
             return false;
@@ -191,6 +184,8 @@ class ReferralOrderIntegration {
             const referrerCode = referredUser.referrer_code;
             const referredUserId = referredUser.user_id;
 
+            console.log('🎁 Processing reward for referrer code:', referrerCode);
+
             // 1. Find the pending referral record
             const refResponse = await fetch(
                 `${this.apiUrl}/search?sheet=referrals&referrer_code=${referrerCode}&referred_user_id=${referredUserId}&status=pending`
@@ -198,43 +193,42 @@ class ReferralOrderIntegration {
             const referrals = await refResponse.json();
 
             if (!referrals || referrals.length === 0) {
-                console.log('No pending referral found');
+                console.log('⚠️ No pending referral found');
                 return;
             }
 
             const referral = referrals[0];
+            console.log('✅ Pending referral found:', referral.referral_id);
 
-            // 2. Update referral status to completed
-            // Note: SheetDB update by search is tricky, we'll use the ID if available
-            // For now, we'll create a new completed record (workaround for SheetDB limitation)
-            
-            // 3. Find referrer user
+            // 2. Find referrer user
             const referrerResponse = await fetch(`${this.apiUrl}/search?sheet=users&referral_code=${referrerCode}`);
             const referrers = await referrerResponse.json();
 
             if (!referrers || referrers.length === 0) {
-                console.log('Referrer not found');
+                console.log('⚠️ Referrer not found');
                 return;
             }
 
             const referrer = referrers[0];
+            console.log('✅ Referrer found:', referrer.name);
 
-            // 4. Add points to referrer
-            const newPoints = (parseInt(referrer.total_points) || 0) + 10000;
+            // 3. Add points to referrer
+            const currentPoints = parseInt(referrer.total_points) || 0;
+            const newPoints = currentPoints + 10000;
 
-            // Update referrer points using SheetDB
-            // We need to use the 'id' field for SheetDB updates
+            // Update referrer points using SheetDB (using id field)
             if (referrer.id) {
-                await fetch(`${this.apiUrl}/id/${referrer.id}`, {
+                await fetch(`${this.apiUrl}/id/${referrer.id}?sheet=users`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         data: { total_points: newPoints }
                     })
                 });
+                console.log(`✅ Points updated: ${referrer.name} now has ${newPoints} points`);
             }
 
-            // 5. Update referral status
+            // 4. Update referral status
             if (referral.id) {
                 await fetch(`${this.apiUrl}/id/${referral.id}?sheet=referrals`, {
                     method: 'PATCH',
@@ -246,12 +240,11 @@ class ReferralOrderIntegration {
                         }
                     })
                 });
+                console.log('✅ Referral status updated to completed');
             }
 
-            console.log(`✅ Reward given: ${referrer.name} received 10,000 points`);
-
-            // 6. Show notification to user (if they're the referrer and currently on site)
-            this.showRewardNotification(referrer.name);
+            // 5. Show notification to user (if they're the referrer and currently on site)
+            this.showRewardNotification(referrer.name, referrer.referral_code);
 
         } catch (error) {
             console.error('Error completing referral:', error);
@@ -259,28 +252,30 @@ class ReferralOrderIntegration {
     }
 
     /**
-     * Generate referral code from WhatsApp number
-     * @param {string} whatsappNo - WhatsApp number
+     * Generate referral code from name
+     * @param {string} name - User name
      * @returns {string} Referral code
      */
-    generateReferralCode(whatsappNo) {
-        const prefix = whatsappNo.slice(-4);
+    generateReferralCode(name) {
+        // Take first 4 letters of name (or less if name is short)
+        const prefix = name.substring(0, 4).toUpperCase().replace(/[^A-Z]/g, '');
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-        return prefix + random;
+        return (prefix + random).substring(0, 8); // Max 8 characters
     }
 
     /**
      * Show reward notification
      * @param {string} referrerName - Name of referrer who got reward
+     * @param {string} referrerCode - Referral code of referrer
      */
-    showRewardNotification(referrerName) {
+    showRewardNotification(referrerName, referrerCode) {
         // Check if current user is the referrer
         const currentUserData = localStorage.getItem('sembako_user_data');
         if (!currentUserData) return;
 
         try {
             const currentUser = JSON.parse(currentUserData);
-            if (currentUser.name === referrerName) {
+            if (currentUser.referral_code === referrerCode) {
                 // Show notification
                 this.displayNotification('🎉 Selamat! Anda mendapat 10.000 poin dari referral!');
             }
@@ -314,6 +309,35 @@ class ReferralOrderIntegration {
                 <span style="font-size: 1rem; font-weight: 600;">${message}</span>
             </div>
         `;
+
+        // Add animation keyframes
+        if (!document.getElementById('referral-notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'referral-notification-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
 
         document.body.appendChild(notification);
 

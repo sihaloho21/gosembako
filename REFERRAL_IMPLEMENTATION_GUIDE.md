@@ -74,7 +74,7 @@ Buka spreadsheet Anda:
 https://docs.google.com/spreadsheets/d/174qAwA2hddfQOFUFDx7czOtpRlD9WUiiIaf6Yao8WRc/edit
 ```
 
-### Langkah 2: Buat 3 Sheet Baru
+### Langkah 2: Buat 2 Sheet Baru
 
 #### Sheet 1: `users`
 
@@ -92,13 +92,16 @@ Buat sheet baru dengan nama **`referrals`** (huruf kecil), lalu di baris pertama
 id | referral_id | referrer_code | referred_user_id | referred_name | status | reward_points | created_at | completed_at
 ```
 
-#### Sheet 3: `orders`
+#### Sheet 3: `orders` (Sudah Ada)
 
-Buat sheet baru dengan nama **`orders`** (huruf kecil), lalu di baris pertama isi header:
+**✅ TIDAK PERLU DIBUAT BARU!**
 
+Sheet `orders` sudah ada di spreadsheet Anda dengan struktur existing:
 ```
-id | order_id | user_id | whatsapp_no | order_details | total_amount | payment_method | created_at
+id | pelanggan | produk | qty | total | status | tanggal | phone | poin | point_processed
 ```
+
+Sistem referral akan menggunakan kolom `phone` untuk identifikasi user dan validasi first order.
 
 ### Langkah 3: Test Akses SheetDB
 

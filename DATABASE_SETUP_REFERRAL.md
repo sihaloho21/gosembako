@@ -62,37 +62,37 @@ Buat sheet baru dengan nama **`referrals`** (huruf kecil semua).
 
 ---
 
-## Langkah 4: Buat Sheet Baru - `orders`
+## Langkah 4: Sheet `orders` (Sudah Ada)
 
-Buat sheet baru dengan nama **`orders`** (huruf kecil semua).
+**✅ TIDAK PERLU DIBUAT BARU!**
 
-### Kolom-kolom yang diperlukan:
+Sheet `orders` sudah ada di spreadsheet Anda dengan struktur:
 
-| Kolom (Header) | Contoh Data | Keterangan |
-|----------------|-------------|------------|
-| `id` | `1` | ID auto-increment (untuk SheetDB) |
-| `order_id` | `ORD-1737356084789` | ID unik pesanan |
-| `user_id` | `USR-1737356084123` | User ID yang memesan |
-| `whatsapp_no` | `6281234567890` | Nomor WhatsApp pemesan |
-| `order_details` | `Paket A x2, Paket B x1` | Detail pesanan |
-| `total_amount` | `150000` | Total nilai pesanan |
-| `payment_method` | `cash` | Metode pembayaran: cash/gajian |
-| `created_at` | `2026-01-21 14:30:00` | Waktu pesanan dibuat |
+| Kolom Existing | Keterangan |
+|----------------|------------|
+| `id` | Order ID |
+| `pelanggan` | Nama pelanggan |
+| `produk` | Detail produk |
+| `qty` | Quantity |
+| `total` | Total harga |
+| `status` | Status order |
+| `tanggal` | Tanggal order |
+| `phone` | Nomor telepon |
+| `poin` | Poin yang didapat |
+| `point_processed` | Status proses poin |
 
-**Cara membuat:**
-1. Klik tombol **+** untuk menambah sheet baru
-2. Rename sheet menjadi `orders`
-3. Di baris pertama, isi header sesuai tabel di atas
+**Sistem referral akan menggunakan sheet `orders` yang sudah ada ini.**  
+Kolom `phone` digunakan untuk identifikasi user dan cek first order.
 
 ---
 
 ## Langkah 5: Verifikasi Setup
 
-Setelah membuat 3 sheet baru, pastikan:
+Setelah membuat 2 sheet baru, pastikan:
 
 ✅ Sheet `users` ada dengan 8 kolom header  
 ✅ Sheet `referrals` ada dengan 9 kolom header  
-✅ Sheet `orders` ada dengan 8 kolom header  
+✅ Sheet `orders` sudah ada (existing, tidak perlu dibuat baru)  
 ✅ Semua nama sheet menggunakan huruf kecil  
 ✅ Semua header di row 1 (baris pertama)
 
@@ -113,10 +113,11 @@ Harusnya return array kosong `[]` atau data yang ada.
 https://sheetdb.io/api/v1/f1ioa83a268s8?sheet=referrals
 ```
 
-**Test 3 - Read Orders:**
+**Test 3 - Read Orders (Existing):**
 ```
 https://sheetdb.io/api/v1/f1ioa83a268s8?sheet=orders
 ```
+Sheet ini sudah ada, harusnya return data order yang sudah ada.
 
 Jika semua test berhasil (tidak error 404), database sudah siap!
 

@@ -1305,12 +1305,10 @@ function sendToWA() {
             
             // Process referral reward if applicable
             if (window.referralOrderIntegration) {
-                referralOrderIntegration.processOrder({
-                    whatsappNo: normalizePhone(phone),
-                    items: cart,
-                    totalAmount: total,
-                    paymentMethod: payMethod
-                }).then(result => {
+                referralOrderIntegration.processOrder(
+                    normalizePhone(phone),
+                    name
+                ).then(result => {
                     if (result.referralProcessed) {
                         console.log('✅ Referral reward processed for first order');
                     }
