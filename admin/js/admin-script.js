@@ -32,6 +32,7 @@ function showSection(sectionId) {
         kategori: 'Kategori',
         pesanan: 'Pesanan',
         'tukar-poin': 'Tukar Poin',
+        banners: 'Banner Promosi',
         'user-points': 'Poin Pengguna',
         'tiered-pricing': 'Harga Grosir Bertingkat',
         pengaturan: 'Pengaturan'
@@ -42,6 +43,7 @@ function showSection(sectionId) {
     if (sectionId === 'produk') fetchAdminProducts();
     if (sectionId === 'pesanan') fetchOrders();
     if (sectionId === 'tukar-poin') fetchTukarPoin();
+    if (sectionId === 'banners') fetchBanners();
     if (sectionId === 'user-points') fetchUserPoints();
     if (sectionId === 'tiered-pricing') fetchTieredPricingProducts();
     if (sectionId === 'dashboard') {
