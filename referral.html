@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program Referral - Paket Sembako</title>
+    <meta name="description" content="Ajak teman belanja sembako dan dapatkan poin reward. Program referral Paket Sembako - Give 10, Get 10!">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/img/logo.webp">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/referral-style.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation (reuse from main page) -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="assets/img/logo.webp" alt="Logo" class="h-10">
+                <span class="text-xl font-bold text-gray-800">Paket Sembako</span>
+            </a>
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="text-gray-600 hover:text-purple-600 transition">
+                    <i class="fas fa-home"></i> Beranda
+                </a>
+                <a href="referral.html" class="text-purple-600 font-semibold">
+                    <i class="fas fa-gift"></i> Referral
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="referral-container">
+        <!-- Hero Section -->
+        <div class="referral-hero">
+            <h1>🎁 Ajak Teman, Dapatkan Poin!</h1>
+            <p>Program "Give 10, Get 10" - Teman dapat diskon 10%, Anda dapat 10.000 Poin</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="referral-stats">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="total-referrals">0</div>
+                <div class="stat-label">Total Teman Diajak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="completed-referrals">0</div>
+                <div class="stat-label">Referral Berhasil</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value" id="total-points">0</div>
+                <div class="stat-label">Total Poin Anda</div>
+            </div>
+        </div>
+
+        <!-- Referral Link Section -->
+        <div class="referral-link-section">
+            <h2>📤 Bagikan Link Referral Anda</h2>
+            <p class="text-gray-600 mb-4">Salin link di bawah ini dan bagikan ke teman-teman Anda:</p>
+            
+            <div class="link-input-group">
+                <input type="text" id="referral-link" readonly placeholder="Loading...">
+                <button onclick="copyReferralLink()">
+                    <i class="fas fa-copy"></i> Salin
+                </button>
+            </div>
+
+            <div id="copy-success" class="success-message" style="display: none;">
+                <span class="icon">✅</span>
+                <span>Link berhasil disalin ke clipboard!</span>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-3 mt-6">Atau bagikan langsung ke:</h3>
+            <div class="share-buttons">
+                <button class="share-btn whatsapp" onclick="shareToWhatsApp()">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="share-btn facebook" onclick="shareToFacebook()">
+                    <i class="fab fa-facebook"></i> Facebook
+                </button>
+                <button class="share-btn twitter" onclick="shareToTwitter()">
+                    <i class="fab fa-twitter"></i> Twitter
+                </button>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="referral-link-section">
+            <h2>❓ Cara Kerja Program Referral</h2>
+            <div class="grid md:grid-cols-3 gap-6 mt-6">
+                <div class="text-center">
+                    <div class="text-5xl mb-4">1️⃣</div>
+                    <h3 class="font-bold text-lg mb-2">Bagikan Link</h3>
+                    <p class="text-gray-600">Bagikan link referral Anda ke teman atau keluarga</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl mb-4">2️⃣</div>
+                    <h3 class="font-bold text-lg mb-2">Teman Belanja</h3>
+                    <p class="text-gray-600">Teman mendapat diskon 10% untuk pesanan pertama</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl mb-4">3️⃣</div>
+                    <h3 class="font-bold text-lg mb-2">Anda Dapat Poin</h3>
+                    <p class="text-gray-600">Anda mendapat 10.000 poin setelah teman selesai order</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral History -->
+        <div class="referral-history">
+            <h2>📊 Riwayat Referral Anda</h2>
+            <div id="history-container">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2026 Paket Sembako. Semua hak dilindungi.</p>
+            <p class="mt-2 text-gray-400">Program Referral - Give 10, Get 10</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api-service.js"></script>
+    <script src="assets/js/referral-dashboard.js"></script>
+</body>
+</html>

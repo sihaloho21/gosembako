@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="assets/css/banner-carousel.css">
     <link rel="stylesheet" href="assets/css/promo-banner-carousel.css">
     <link rel="stylesheet" href="assets/css/skeleton-loading.css">
+    <link rel="stylesheet" href="assets/css/referral-style.css">
 </head>
 <body class="bg-gray-50">
     <!-- Store Closed Banner -->
@@ -28,6 +29,12 @@
                 <h1 class="text-2xl font-bold">GoSembako</h1>
             </div>
             <div class="flex items-center gap-4">
+                <!-- Referral Button -->
+                <a href="referral.html" class="relative p-2 bg-purple-600 hover:bg-purple-700 rounded-full transition" title="Program Referral">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </a>
                 <!-- Wishlist Button -->
                 <button onclick="openWishlistModal()" class="relative p-2 bg-red-500 hover:bg-red-600 rounded-full transition" title="Daftar Keinginan">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -897,6 +904,8 @@
     <script src="assets/js/slider-enhanced.js"></script>
     <script src="assets/js/promo-banner-carousel.js"></script>
     <script src="assets/js/banner-carousel.js"></script>
+    <script src="assets/js/referral-handler.js"></script>
+    <script src="assets/js/referral-order-integration.js"></script>
     <script>
         // Fetch settings from bootstrap API before loading main script
         (async () => {

@@ -1302,6 +1302,22 @@ function sendToWA() {
     ApiService.post('?sheet=orders', [orderData])
         .then(data => {
             console.log('Order logged to spreadsheet:', data);
+            
+            // Process referral reward if applicable
+            if (window.referralOrderIntegration) {
+                referralOrderIntegration.processOrder({
+                    whatsappNo: normalizePhone(phone),
+                    items: cart,
+                    totalAmount: total,
+                    paymentMethod: payMethod
+                }).then(result => {
+                    if (result.referralProcessed) {
+                        console.log('✅ Referral reward processed for first order');
+                    }
+                }).catch(err => {
+                    console.error('Error processing referral:', err);
+                });
+            }
         })
         .catch(err => {
             console.error('Error logging order:', err);
