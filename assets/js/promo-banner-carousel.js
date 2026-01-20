@@ -145,7 +145,7 @@ class PromotionalBannerCarousel {
                 <div class="promo-banner-card">
                     ${hasLink ? `<a href="${banner.cta_url}" class="promo-banner-link">` : ''}
                         <div class="promo-banner-image-container">
-                            <img src="${banner.image_url}" alt="${banner.title || 'Banner Promosi'}" class="promo-banner-image" onerror="this.src='https://placehold.co/1200x400?text=Banner+Promosi'">
+                            <img src="${banner.image_url}" alt="${banner.title || 'Banner Promosi'}" class="promo-banner-image" loading="${index === 0 ? 'eager' : 'lazy'}" onerror="this.src='https://placehold.co/1200x400?text=Banner+Promosi'">
                         </div>
                         ${hasCaption ? `
                         <div class="promo-banner-caption">
