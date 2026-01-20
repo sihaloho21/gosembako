@@ -137,9 +137,14 @@ class ReferralOrderIntegration {
      */
     async findOrCreateUser(phone, name) {
         try {
+            // IMPORTANT: Users sheet uses 8xxx format, not 628xxx
+            // Convert 628xxx → 8xxx for search
+            const searchPhone = phone.startsWith('62') ? phone.substring(2) : phone;
+            console.log(`🔍 Searching user with phone: ${searchPhone} (original: ${phone})`);
+            
             // Search for existing user by WhatsApp number
             const response = await this.fetchWithRetry(
-                `${this.apiUrl}/search?sheet=users&whatsapp_no=${phone}`
+                `${this.apiUrl}/search?sheet=users&whatsapp_no=${searchPhone}`
             );
             const users = await response.json();
 
@@ -158,10 +163,13 @@ class ReferralOrderIntegration {
             const userId = 'USR-' + Date.now();
             const referralCode = this.generateReferralCode(name);
 
+            // Save phone in 8xxx format to match existing data
+            const savePhone = phone.startsWith('62') ? phone.substring(2) : phone;
+            
             const newUser = {
                 user_id: userId,
                 name: name,
-                whatsapp_no: phone,
+                whatsapp_no: savePhone,  // Save as 8xxx format
                 referral_code: referralCode,
                 referrer_code: referrerCode,
                 total_points: 0,
@@ -241,9 +249,14 @@ class ReferralOrderIntegration {
             let attempts = 0;
             const maxAttempts = 3;
             
+            // IMPORTANT: Orders sheet uses 8xxx format, not 628xxx
+            // Convert 628xxx → 8xxx for search
+            const searchPhone = phone.startsWith('62') ? phone.substring(2) : phone;
+            console.log(`🔍 Searching orders with phone: ${searchPhone} (original: ${phone})`);
+            
             while (attempts < maxAttempts) {
                 const response = await this.fetchWithRetry(
-                    `${this.apiUrl}/search?sheet=orders&phone=${phone}`
+                    `${this.apiUrl}/search?sheet=orders&phone=${searchPhone}`
                 );
                 const orders = await response.json();
                 
