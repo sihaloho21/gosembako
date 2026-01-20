@@ -211,9 +211,9 @@ function renderProducts(products) {
                     </div>
                     ` : ''}
                 </div>
-                <div class="product-image-wrapper">
-                    <div class="product-skeleton"></div>
-                    <img src="${mainImage}" alt="${p.nama}" onclick='showDetail(${pData})' class="cursor-pointer hover:opacity-90 transition-opacity ${p.stok === 0 ? 'grayscale opacity-60' : ''}" loading="lazy" onerror="this.src='https://placehold.co/300x200?text=Produk'" onload="this.classList.add('loaded')">
+                <div class="lazy-image-wrapper">
+                    <div class="skeleton skeleton-product-image"></div>
+                    <img src="${mainImage}" alt="${p.nama}" onclick='showDetail(${pData})' class="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity ${p.stok === 0 ? 'grayscale opacity-60' : ''}" loading="lazy" onerror="this.src='https://placehold.co/300x200?text=Produk'" onload="this.classList.add('loaded'); this.previousElementSibling.style.display='none';">
                 </div>
                 <div class="p-6">
                     <div class="flex justify-between items-start mb-2">
