@@ -235,13 +235,37 @@ class ReferralOrderIntegration {
      */
     async isFirstOrder(phone) {
         try {
-            const response = await this.fetchWithRetry(
-                `${this.apiUrl}/search?sheet=orders&phone=${phone}`
-            );
-            const orders = await response.json();
+            // Retry up to 3 times with 1s delay if order count is 0
+            // This handles SheetDB indexing delay
+            let orderCount = 0;
+            let attempts = 0;
+            const maxAttempts = 3;
             
-            const orderCount = orders && orders.length > 0 ? orders.length : 0;
-            console.log(`📊 Order count for ${phone}: ${orderCount}`);
+            while (attempts < maxAttempts) {
+                const response = await this.fetchWithRetry(
+                    `${this.apiUrl}/search?sheet=orders&phone=${phone}`
+                );
+                const orders = await response.json();
+                
+                orderCount = orders && orders.length > 0 ? orders.length : 0;
+                console.log(`📊 Order count for ${phone}: ${orderCount} (attempt ${attempts + 1}/${maxAttempts})`);
+                
+                // If we found orders, break the loop
+                if (orderCount > 0) {
+                    break;
+                }
+                
+                // If still 0, wait 1s and try again
+                attempts++;
+                if (attempts < maxAttempts) {
+                    console.log(`⏳ Order not found yet, waiting 1s before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            if (orderCount === 0) {
+                console.warn('⚠️ Order count still 0 after ${maxAttempts} attempts - SheetDB may be slow');
+            }
             
             return orderCount === 1; // True if only 1 order (the one just created)
         } catch (error) {

@@ -1318,7 +1318,7 @@ function sendToWA() {
                     }).catch(err => {
                         console.error('Error processing referral:', err);
                     });
-                }, 1500); // 1.5 second delay
+                }, 3000); // 3 second delay to ensure SheetDB has processed the order
             }
         })
         .catch(err => {
