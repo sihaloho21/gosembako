@@ -319,24 +319,74 @@ class ReferralOrderIntegration {
             }
 
             // 5. Update referral status
-            // Try PATCH with referral_id
+            // Use more reliable method: Update all fields via search-based PATCH
             try {
-                await this.fetchWithRetry(
-                    `${this.apiUrl}/referral_id/${referral.referral_id}?sheet=referrals`,
+                // Method 1: Try PATCH with multiple search criteria
+                const updateUrl = `${this.apiUrl}/referrer_code/${referrerCode}/referred_user_id/${referredUserId}?sheet=referrals`;
+                const updateResponse = await this.fetchWithRetry(
+                    updateUrl,
                     {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                             data: { 
                                 status: 'completed',
-                                completed_at: new Date().toISOString()
+                                completed_at: new Date().toLocaleString('id-ID', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: false
+                                }).replace(',', '')
                             }
                         })
                     }
                 );
-                console.log('✅ Referral status updated to completed');
+                
+                if (updateResponse.ok) {
+                    console.log('✅ Referral status updated to completed');
+                } else {
+                    throw new Error(`PATCH failed with status ${updateResponse.status}`);
+                }
             } catch (patchError) {
-                console.error('⚠️ Failed to update referral status:', patchError.message);
+                console.error('⚠️ PATCH failed:', patchError.message);
+                console.log('🔄 Trying alternative method: DELETE + INSERT');
+                
+                // Fallback Method 2: Delete old record and insert new one with completed status
+                try {
+                    // Delete the old pending record
+                    await this.fetchWithRetry(
+                        `${this.apiUrl}/referral_id/${referral.referral_id}?sheet=referrals`,
+                        { method: 'DELETE' }
+                    );
+                    
+                    // Insert new completed record
+                    const completedReferral = {
+                        ...referral,
+                        status: 'completed',
+                        completed_at: new Date().toLocaleString('id-ID', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        }).replace(',', '')
+                    };
+                    
+                    await this.fetchWithRetry(this.apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sheet: 'referrals', data: [completedReferral] })
+                    });
+                    
+                    console.log('✅ Referral status updated via DELETE+INSERT');
+                } catch (fallbackError) {
+                    console.error('❌ Both methods failed:', fallbackError.message);
+                }
             }
 
             // 6. Show notification to user
