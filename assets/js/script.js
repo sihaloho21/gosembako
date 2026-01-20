@@ -1305,17 +1305,20 @@ function sendToWA() {
             console.log('Order logged to spreadsheet:', data);
             
             // Process referral reward if applicable
+            // Add small delay to ensure order is fully saved to SheetDB
             if (window.referralOrderIntegration) {
-                referralOrderIntegration.processOrder(
-                    normalizePhone(phone),
-                    name
-                ).then(result => {
-                    if (result.referralProcessed) {
-                        console.log('✅ Referral reward processed for first order');
-                    }
-                }).catch(err => {
-                    console.error('Error processing referral:', err);
-                });
+                setTimeout(() => {
+                    referralOrderIntegration.processOrder(
+                        normalizePhone(phone),
+                        name
+                    ).then(result => {
+                        if (result.referralProcessed) {
+                            console.log('✅ Referral reward processed for first order');
+                        }
+                    }).catch(err => {
+                        console.error('Error processing referral:', err);
+                    });
+                }, 1500); // 1.5 second delay
             }
         })
         .catch(err => {

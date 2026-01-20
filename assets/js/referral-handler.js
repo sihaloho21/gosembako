@@ -28,9 +28,10 @@ class ReferralHandler {
         const refCode = urlParams.get('ref');
 
         if (refCode) {
-            // Save referral code to localStorage
+            // Save referral code to both localStorage and sessionStorage
             localStorage.setItem(this.STORAGE_KEY, refCode);
-            console.log(`✅ Referral code "${refCode}" saved to localStorage`);
+            sessionStorage.setItem(this.STORAGE_KEY, refCode);
+            console.log(`✅ Referral code "${refCode}" saved to storage`);
 
             // Fetch referrer name for better UX
             this.fetchReferrerName(refCode);
@@ -53,6 +54,7 @@ class ReferralHandler {
             if (data && data.length > 0) {
                 const referrerName = data[0].name;
                 localStorage.setItem(this.REFERRER_NAME_KEY, referrerName);
+                sessionStorage.setItem(this.REFERRER_NAME_KEY, referrerName);
                 console.log(`✅ Referrer name "${referrerName}" saved`);
             }
         } catch (error) {
@@ -131,7 +133,8 @@ class ReferralHandler {
      * @returns {string|null} Referral code or null if not found
      */
     getReferralCode() {
-        return localStorage.getItem(this.STORAGE_KEY);
+        // Try localStorage first, fallback to sessionStorage
+        return localStorage.getItem(this.STORAGE_KEY) || sessionStorage.getItem(this.STORAGE_KEY);
     }
 
     /**
@@ -141,7 +144,9 @@ class ReferralHandler {
     clearReferralCode() {
         localStorage.removeItem(this.STORAGE_KEY);
         localStorage.removeItem(this.REFERRER_NAME_KEY);
-        console.log('✅ Referral code cleared from localStorage');
+        sessionStorage.removeItem(this.STORAGE_KEY);
+        sessionStorage.removeItem(this.REFERRER_NAME_KEY);
+        console.log('✅ Referral code cleared from storage');
     }
 
     /**
