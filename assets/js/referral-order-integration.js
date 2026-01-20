@@ -41,6 +41,33 @@ class ReferralOrderIntegration {
     }
 
     /**
+     * Convert phone to sheet format (8xxx for users/orders, 0xxx for user_points)
+     * @param {string} phone - Normalized phone (628xxx)
+     * @param {string} sheet - Sheet name ('users', 'orders', or 'user_points')
+     * @returns {string} Phone in sheet format
+     */
+    phoneForSheet(phone, sheet) {
+        if (!phone) return '';
+        
+        // Normalize first
+        const normalized = this.normalizePhone(phone);
+        
+        if (sheet === 'user_points') {
+            // user_points uses 0xxx format
+            if (normalized.startsWith('62')) {
+                return '0' + normalized.substring(2);
+            }
+            return normalized;
+        } else {
+            // users & orders use 8xxx format
+            if (normalized.startsWith('62')) {
+                return normalized.substring(2);
+            }
+            return normalized;
+        }
+    }
+
+    /**
      * Fetch with retry logic
      * @param {string} url - API URL
      * @param {object} options - Fetch options
@@ -332,27 +359,75 @@ class ReferralOrderIntegration {
             const referrer = referrers[0];
             console.log('✅ Referrer found:', referrer.name);
 
-            // 3. Calculate new points
-            const currentPoints = parseInt(referrer.total_points) || 0;
-            const newPoints = currentPoints + 10000;
-
-            // 4. Update referrer points
-            // Try PATCH with whatsapp_no (more reliable than id)
+            // 3. Update user_points (single source of truth)
+            // user_points structure: phone | points | last_updated
+            const referrerPhone8xxx = referrer.whatsapp_no; // 8xxx format from users sheet
+            const referrerPhone0xxx = this.phoneForSheet(referrerPhone8xxx, 'user_points'); // Convert to 0xxx for user_points
+            
+            console.log(`📞 Referrer phone: ${referrerPhone8xxx} (users) → ${referrerPhone0xxx} (user_points)`);
+            
             try {
-                await this.fetchWithRetry(
-                    `${this.apiUrl}/whatsapp_no/${referrer.whatsapp_no}?sheet=users`,
-                    {
-                        method: 'PATCH',
+                // Get current points from user_points
+                const userPointsResponse = await this.fetchWithRetry(
+                    `${this.apiUrl}/search?sheet=user_points&phone=${referrerPhone0xxx}`
+                );
+                const userPointsData = await userPointsResponse.json();
+                
+                let currentPoints = 0;
+                let updateMethod = 'INSERT'; // Default: create new record
+                
+                if (userPointsData && userPointsData.length > 0) {
+                    // User exists in user_points
+                    currentPoints = parseInt(userPointsData[0].points) || 0;
+                    updateMethod = 'PATCH';
+                }
+                
+                const newPoints = currentPoints + 10000;
+                const timestamp = new Date().toLocaleString('id-ID', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '-');
+                
+                if (updateMethod === 'PATCH') {
+                    // Update existing record
+                    await this.fetchWithRetry(
+                        `${this.apiUrl}/phone/${referrerPhone0xxx}?sheet=user_points`,
+                        {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                data: { 
+                                    points: newPoints,
+                                    last_updated: timestamp
+                                }
+                            })
+                        }
+                    );
+                    console.log(`✅ Points updated in user_points: ${referrer.name} now has ${newPoints} points`);
+                } else {
+                    // Create new record
+                    await this.fetchWithRetry(this.apiUrl, {
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
-                            data: { total_points: newPoints }
+                            sheet: 'user_points',
+                            data: [{
+                                phone: referrerPhone0xxx,
+                                points: newPoints,
+                                last_updated: timestamp
+                            }]
                         })
-                    }
-                );
-                console.log(`✅ Points updated: ${referrer.name} now has ${newPoints} points`);
-            } catch (patchError) {
-                console.error('⚠️ PATCH failed, trying alternative method:', patchError.message);
-                // Fallback: Could implement delete + insert, but skip for now
+                    });
+                    console.log(`✅ Points created in user_points: ${referrer.name} now has ${newPoints} points`);
+                }
+            } catch (pointsError) {
+                console.error('⚠️ Failed to update user_points:', pointsError.message);
+                // Continue anyway - referral status will still be updated
             }
 
             // 5. Update referral status

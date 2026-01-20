@@ -308,7 +308,24 @@ async function loadReferralStats() {
         // Calculate stats
         const totalReferrals = referrals ? referrals.length : 0;
         const completedReferrals = referrals ? referrals.filter(r => r.status === 'completed').length : 0;
-        const totalPoints = currentUser.total_points || 0;
+        
+        // Get total points from user_points (single source of truth)
+        let totalPoints = 0;
+        try {
+            // Convert phone to user_points format (0xxx)
+            // currentUser.whatsapp_no is in 8xxx format, need to convert to 0xxx
+            const phone0xxx = '0' + currentUser.whatsapp_no;
+            console.log(`📞 Fetching points for: ${phone0xxx}`);
+            
+            const userPointsResponse = await fetch(`${apiUrl}/search?sheet=user_points&phone=${phone0xxx}`);
+            const userPointsData = await userPointsResponse.json();
+            if (userPointsData && userPointsData.length > 0) {
+                totalPoints = parseInt(userPointsData[0].points) || 0;
+            }
+        } catch (error) {
+            console.error('Error fetching user points:', error);
+            // Fallback to 0 if error
+        }
         
         // Update UI
         document.getElementById('total-referrals').textContent = totalReferrals;
