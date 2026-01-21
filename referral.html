@@ -266,11 +266,57 @@
             window.location.href = 'referral-auth.html';
         }
         
-        // Display user name
+        // Display user name and generate referral link
         if (referralUser) {
             const userData = JSON.parse(referralUser);
             const userName = userData.nama || userData.whatsapp || 'User';
             document.getElementById('user-name-display').textContent = userName;
+            
+            // Generate referral link
+            const referralCode = userData.referral_code;
+            const baseUrl = window.location.origin; // Gets domain
+            const referralLink = `${baseUrl}/?ref=${referralCode}`;
+            document.getElementById('referral-link').value = referralLink;
+        }
+        
+        // Copy referral link
+        function copyReferralLink() {
+            const linkInput = document.getElementById('referral-link');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            // Show success message
+            const successMsg = document.getElementById('copy-success');
+            successMsg.classList.remove('hidden');
+            successMsg.classList.add('flex');
+            
+            setTimeout(() => {
+                successMsg.classList.add('hidden');
+                successMsg.classList.remove('flex');
+            }, 3000);
+        }
+        
+        // Share to WhatsApp
+        function shareToWhatsApp() {
+            const referralLink = document.getElementById('referral-link').value;
+            const message = `Halo! Belanja sembako di GoSembako dan dapatkan diskon 10% untuk pesanan pertama kamu! Gunakan link referral saya: ${referralLink}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+        
+        // Share to Facebook
+        function shareToFacebook() {
+            const referralLink = document.getElementById('referral-link').value;
+            const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`;
+            window.open(facebookUrl, '_blank');
+        }
+        
+        // Share to Twitter
+        function shareToTwitter() {
+            const referralLink = document.getElementById('referral-link').value;
+            const message = `Belanja sembako di GoSembako dan dapatkan diskon 10%! ${referralLink}`;
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+            window.open(twitterUrl, '_blank');
         }
         
         // Logout function
