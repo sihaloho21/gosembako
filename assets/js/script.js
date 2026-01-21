@@ -1788,19 +1788,22 @@ async function processClaimReward(rewardId, customerName) {
             pointsDisplay.innerHTML = `${newPoints.toFixed(1)} <span class="text-sm font-bold">Poin</span>`;
         }
 
-        // 5. Send to WhatsApp for notification
+        // 5. Prepare WhatsApp message
         const waMessage = `*KLAIM REWARD POIN BERHASIL*\n\nID Klaim: ${claimId}\nPelanggan: ${customerName}\nNomor WhatsApp: ${phone}\nReward: ${rewardName}\nPoin Ditukar: ${requiredPoints}\nSisa Poin: ${newPoints.toFixed(1)}\n\nMohon segera diproses. Terima kasih!`;
         const waUrl = `https://wa.me/628993370200?text=${encodeURIComponent(waMessage)}`;
         
-        showToast('Penukaran poin berhasil! Membuka WhatsApp...');
+        // Store WhatsApp URL for later use
+        window.claimWhatsAppUrl = waUrl;
         
         // Clear pending data
         pendingRewardData = { id: null, nama: null, poin: null, gambar: null, deskripsi: null };
         
-        // Small delay before opening WhatsApp
-        setTimeout(() => {
-            window.open(waUrl, '_blank');
-        }, 1500);
+        // Close all modals
+        closeNameInputModal();
+        closeConfirmTukarModal();
+        
+        // Show success modal
+        showClaimSuccessModal(claimId);
 
     } catch (error) {
         console.error('Error processing claim:', error);
@@ -2053,3 +2056,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Wait a bit for products to load first
     setTimeout(handleDeepLink, 1000);
 });
+
+
+/**
+ * Show claim success modal with claim ID
+ * @param {string} claimId - The claim ID to display
+ */
+function showClaimSuccessModal(claimId) {
+    const modal = document.getElementById('claim-success-modal');
+    const claimIdElement = document.getElementById('claim-success-id');
+    
+    if (modal && claimIdElement) {
+        claimIdElement.textContent = claimId;
+        modal.classList.remove('hidden');
+    }
+}
+
+/**
+ * Close claim success modal
+ */
+function closeClaimSuccessModal() {
+    const modal = document.getElementById('claim-success-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+/**
+ * Open WhatsApp with claim message
+ */
+function openClaimWhatsApp() {
+    if (window.claimWhatsAppUrl) {
+        window.open(window.claimWhatsAppUrl, '_blank');
+        // Close modal after opening WhatsApp
+        setTimeout(() => {
+            closeClaimSuccessModal();
+        }, 500);
+    }
+}
