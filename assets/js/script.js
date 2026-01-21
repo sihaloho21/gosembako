@@ -1799,11 +1799,13 @@ async function processClaimReward(rewardId, customerName) {
         pendingRewardData = { id: null, nama: null, poin: null, gambar: null, deskripsi: null };
         
         // Close all modals
-        closeNameInputModal();
-        closeConfirmTukarModal();
+        document.getElementById('name-input-modal').classList.add('hidden');
+        document.getElementById('confirm-tukar-modal').classList.add('hidden');
         
-        // Show success modal
-        showClaimSuccessModal(claimId);
+        // Show success modal after a small delay to ensure other modals are closed
+        setTimeout(() => {
+            showClaimSuccessModal(claimId);
+        }, 300);
 
     } catch (error) {
         console.error('Error processing claim:', error);
