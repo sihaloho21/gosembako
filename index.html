@@ -955,11 +955,8 @@
     <script src="assets/js/banner-carousel.js"></script>
 
     <script>
-        // Fetch remote config and bootstrap settings before loading main script
+        // Fetch bootstrap API settings before loading main script
         (async () => {
-            // Fetch remote config.json (Hybrid Solution)
-            await CONFIG.fetchRemoteConfig();
-            
             // Fetch bootstrap API settings (if configured)
             await CONFIG.fetchSettings();
         })();

@@ -12,10 +12,6 @@ const CONFIG = {
         VERSION: '1.0.0'
     },
     
-    // Remote config cache
-    _remoteConfig: null,
-    _configFetched: false,
-    
     // Storage keys
     STORAGE_KEYS: {
         BOOTSTRAP_API: 'sembako_bootstrap_api_url',
@@ -28,79 +24,6 @@ const CONFIG = {
     
     // Session storage for fetched settings
     _settingsFetched: false,
-    
-    /**
-     * Fetch remote config from config.json (Hybrid Solution)
-     * @returns {Promise<object|null>} Remote config or null
-     */
-    async fetchRemoteConfig() {
-        // Only fetch once per session
-        if (this._configFetched) {
-            return this._remoteConfig;
-        }
-        
-        try {
-            console.log('🔄 [CONFIG] Fetching remote config.json...');
-            const response = await fetch('/config.json?t=' + Date.now());
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const remoteConfig = await response.json();
-            console.log('✅ [CONFIG] Remote config loaded:', remoteConfig);
-            
-            // Check version and auto-reload if different
-            this.checkVersionAndReload(remoteConfig.version);
-            
-            this._remoteConfig = remoteConfig;
-            this._configFetched = true;
-            
-            // Cache in localStorage
-            localStorage.setItem('sembako_remote_config', JSON.stringify(remoteConfig));
-            localStorage.setItem('sembako_config_version', remoteConfig.version);
-            
-            return remoteConfig;
-            
-        } catch (error) {
-            console.warn('⚠️ [CONFIG] Failed to fetch remote config, using fallback:', error.message);
-            
-            // Try to use cached version
-            const cached = localStorage.getItem('sembako_remote_config');
-            if (cached) {
-                try {
-                    this._remoteConfig = JSON.parse(cached);
-                    console.log('✅ [CONFIG] Using cached config');
-                    return this._remoteConfig;
-                } catch (e) {
-                    console.error('❌ [CONFIG] Failed to parse cached config');
-                }
-            }
-            
-            return null; // Will use hardcoded fallback
-        }
-    },
-    
-    /**
-     * Check version and reload if different
-     * @param {string} remoteVersion - Version from remote config
-     */
-    checkVersionAndReload(remoteVersion) {
-        const localVersion = localStorage.getItem('sembako_config_version');
-        
-        if (localVersion && localVersion !== remoteVersion) {
-            console.log(`🔄 [CONFIG] Version changed: ${localVersion} → ${remoteVersion}`);
-            console.log('🔄 [CONFIG] Reloading page to apply new config...');
-            
-            // Update version first
-            localStorage.setItem('sembako_config_version', remoteVersion);
-            
-            // Reload after short delay
-            setTimeout(() => {
-                location.reload(true);
-            }, 500);
-        }
-    },
     
     /**
      * Mendapatkan Bootstrap API URL
@@ -180,7 +103,7 @@ const CONFIG = {
     
     /**
      * Mendapatkan URL API untuk halaman utama
-     * Priority: sessionStorage (bootstrap) > remoteConfig > localStorage (manual) > default
+     * Priority: sessionStorage (bootstrap) > localStorage (manual) > default
      * @returns {string} URL API
      */
     getMainApiUrl() {
@@ -188,22 +111,17 @@ const CONFIG = {
         const runtime = sessionStorage.getItem('runtime_main_api_url');
         if (runtime) return runtime;
         
-        // Priority 2: Remote config (config.json)
-        if (this._remoteConfig && this._remoteConfig.api && this._remoteConfig.api.main) {
-            return this._remoteConfig.api.main;
-        }
-        
-        // Priority 3: Manual dari localStorage
+        // Priority 2: Manual dari localStorage
         const manual = localStorage.getItem(this.STORAGE_KEYS.MAIN_API);
         if (manual) return manual;
         
-        // Priority 4: Default (Fallback)
+        // Priority 3: Default (Fallback)
         return this.DEFAULTS.MAIN_API;
     },
     
     /**
      * Mendapatkan URL API untuk halaman admin
-     * Priority: sessionStorage (bootstrap) > remoteConfig > localStorage (manual) > default
+     * Priority: sessionStorage (bootstrap) > localStorage (manual) > default
      * @returns {string} URL API
      */
     getAdminApiUrl() {
@@ -211,16 +129,11 @@ const CONFIG = {
         const runtime = sessionStorage.getItem('runtime_admin_api_url');
         if (runtime) return runtime;
         
-        // Priority 2: Remote config (config.json)
-        if (this._remoteConfig && this._remoteConfig.api && this._remoteConfig.api.admin) {
-            return this._remoteConfig.api.admin;
-        }
-        
-        // Priority 3: Manual dari localStorage
+        // Priority 2: Manual dari localStorage
         const manual = localStorage.getItem(this.STORAGE_KEYS.ADMIN_API);
         if (manual) return manual;
         
-        // Priority 4: Default (Fallback)
+        // Priority 3: Default (Fallback)
         return this.DEFAULTS.ADMIN_API;
     },
     
