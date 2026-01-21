@@ -2115,3 +2115,29 @@ function openClaimWhatsApp() {
         }, 500);
     }
 }
+
+/**
+ * Update payment method info text dynamically
+ * @param {string} method - Payment method: 'tunai', 'qris', or 'gajian'
+ */
+function updatePaymentMethodInfo(method) {
+    const infoContainer = document.getElementById('payment-method-info');
+    const infoText = document.getElementById('payment-method-info-text');
+    
+    if (!infoContainer || !infoText) return;
+    
+    // Payment method information mapping
+    const paymentInfo = {
+        'tunai': 'Anda memilih pembayaran tunai. Pembayaran dilakukan secara langsung saat pesanan diterima atau diambil.',
+        'qris': 'Anda memilih pembayaran melalui QRIS. Silakan lakukan pembayaran menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS.',
+        'gajian': 'Anda memilih pembayaran gajian. Pembayaran akan ditagihkan pada periode gajian berikutnya, dengan jatuh tempo setiap tanggal 6–7 setiap bulan.'
+    };
+    
+    // Update text and show container
+    if (paymentInfo[method]) {
+        infoText.textContent = paymentInfo[method];
+        infoContainer.classList.remove('hidden');
+    } else {
+        infoContainer.classList.add('hidden');
+    }
+}

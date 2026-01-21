@@ -432,23 +432,31 @@
                     </h4>
                     <div class="grid grid-cols-3 gap-2">
                         <label class="radio-card relative cursor-pointer">
-                            <input type="radio" name="pay-method" value="Cash / Transfer" onchange="updateOrderTotal()" class="absolute opacity-0">
+                            <input type="radio" name="pay-method" value="Cash / Transfer" onchange="updatePaymentMethodInfo('tunai'); updateOrderTotal()" class="absolute opacity-0">
                             <div class="radio-label p-2 border-2 border-gray-100 rounded-xl text-center transition">
                                 <p class="font-bold text-gray-800 text-[10px]">TUNAI</p>
                             </div>
                         </label>
                         <label class="radio-card relative cursor-pointer">
-                            <input type="radio" name="pay-method" value="QRIS" onchange="showQRISModal(); updateOrderTotal();" class="absolute opacity-0">
+                            <input type="radio" name="pay-method" value="QRIS" onchange="updatePaymentMethodInfo('qris'); showQRISModal(); updateOrderTotal();" class="absolute opacity-0">
                             <div class="radio-label p-2 border-2 border-gray-100 rounded-xl text-center transition">
                                 <p class="font-bold text-gray-800 text-[10px]">QRIS</p>
                             </div>
                         </label>
                         <label class="radio-card relative cursor-pointer">
-                            <input type="radio" name="pay-method" value="Bayar Gajian" onchange="updateOrderTotal()" class="absolute opacity-0">
+                            <input type="radio" name="pay-method" value="Bayar Gajian" onchange="updatePaymentMethodInfo('gajian'); updateOrderTotal()" class="absolute opacity-0">
                             <div class="radio-label p-2 border-2 border-gray-100 rounded-xl text-center transition">
                                 <p class="font-bold text-gray-800 text-[10px]">GAJIAN</p>
                             </div>
                         </label>
+                    </div>
+                    
+                    <!-- Payment Method Info Text (Dynamic) -->
+                    <div id="payment-method-info" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800 leading-relaxed">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <p id="payment-method-info-text"></p>
+                        </div>
                     </div>
                 </div>
 
