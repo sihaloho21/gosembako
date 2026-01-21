@@ -2,7 +2,7 @@
 // Use the same API as configured in admin settings
 function getSheetAPI() {
     // Get from CONFIG if available, otherwise use default
-    return CONFIG && CONFIG.getMainAPI ? CONFIG.getMainAPI() : 'https://sheetdb.io/api/v1/r82rgfhhtkbta';
+    return CONFIG && CONFIG.getMainAPI ? CONFIG.getMainAPI() : 'https://sheetdb.io/api/v1/j29539mbwzs2c';
 }
 
 // Tab Switching
