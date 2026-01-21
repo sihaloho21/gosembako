@@ -1,6 +1,5 @@
 // Referral Authentication System
 const SHEET_API = 'https://sheetdb.io/api/v1/f1ioa83a268s8';
-const USER_REFERRAL_SHEET = `${SHEET_API}/user_referral`;
 
 // Tab Switching
 function switchTab(tab) {
@@ -102,7 +101,7 @@ async function handleLogin(event) {
     
     try {
         // Check if user exists
-        const response = await fetch(`${USER_REFERRAL_SHEET}/search?whatsapp=${whatsapp}`);
+        const response = await fetch(`${SHEET_API}?sheet=user_referral&whatsapp=${whatsapp}`);
         const data = await response.json();
         
         if (!data || data.length === 0) {
@@ -121,13 +120,15 @@ async function handleLogin(event) {
         }
         
         // Update last login
-        await fetch(`${USER_REFERRAL_SHEET}/whatsapp/${whatsapp}`, {
+        await fetch(`${SHEET_API}/whatsapp/${whatsapp}?sheet=user_referral`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                last_login: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                data: {
+                    last_login: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                }
             })
         });
         
@@ -179,7 +180,7 @@ async function handleRegister(event) {
     
     try {
         // Check if user already exists
-        const checkResponse = await fetch(`${USER_REFERRAL_SHEET}/search?whatsapp=${whatsapp}`);
+        const checkResponse = await fetch(`${SHEET_API}?sheet=user_referral&whatsapp=${whatsapp}`);
         const existingUser = await checkResponse.json();
         
         if (existingUser && existingUser.length > 0) {
@@ -205,12 +206,14 @@ async function handleRegister(event) {
             last_login: now
         };
         
-        const response = await fetch(USER_REFERRAL_SHEET, {
+        const response = await fetch(`${SHEET_API}?sheet=user_referral`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(newUser)
+            body: JSON.stringify({
+                data: newUser
+            })
         });
         
         if (!response.ok) {
