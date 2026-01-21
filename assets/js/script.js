@@ -725,10 +725,18 @@ function showDetail(p) {
                 updateTieredPricingUI({ ...p, harga: basePrice, grosir: grosirData }, qty);
             }
             
-            // Also update modal prices based on tiered price
-            const effectivePrice = typeof calculateTieredPrice === 'function' ? calculateTieredPrice(basePrice, qty, grosirData) : basePrice;
-            const gajianInfo = typeof calculateGajianPrice === 'function' ? calculateGajianPrice(effectivePrice) : { price: effectivePrice };
-            updateModalPrices(effectivePrice, gajianInfo.price, coretPrice);
+            // Calculate tiered price per unit
+            const effectivePricePerUnit = typeof calculateTieredPrice === 'function' ? calculateTieredPrice(basePrice, qty, grosirData) : basePrice;
+            
+            // Calculate TOTAL prices (unit price × quantity)
+            const totalCashPrice = effectivePricePerUnit * qty;
+            
+            // Calculate gajian price per unit, then multiply by quantity
+            const gajianInfo = typeof calculateGajianPrice === 'function' ? calculateGajianPrice(effectivePricePerUnit) : { price: effectivePricePerUnit };
+            const totalGajianPrice = gajianInfo.price * qty;
+            
+            // Update display with TOTAL prices
+            updateModalPrices(totalCashPrice, totalGajianPrice, coretPrice * qty);
         };
     }
 
