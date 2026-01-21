@@ -883,7 +883,11 @@ function proceedDirectOrder(p) {
         itemToAdd.hargaGajian = gajianInfo.price;
     }
 
-    cart = [{ ...itemToAdd, qty: 1 }];
+    // Get quantity from modal input (default to 1 if not found)
+    const qtyInput = document.getElementById('modal-qty');
+    const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+
+    cart = [{ ...itemToAdd, qty: quantity }];
     saveCart();
     updateCartUI();
     openOrderModal();
