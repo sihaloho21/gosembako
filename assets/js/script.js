@@ -482,7 +482,7 @@ function showSuccessNotification(orderId, waUrl) {
         </button>
         <div class="mb-4">
             <div class="w-32 h-32 flex items-center justify-center mx-auto mb-4">
-                <img src="assets/images/success-gosembako.gif" alt="Success" class="w-full h-full object-contain">
+                <img src="assets/images/success-shield.gif" alt="Success" class="w-full h-full object-contain">
             </div>
             <h3 class="text-2xl font-bold text-gray-800 mb-2">Pesanan Berhasil Dikirim!</h3>
             <p class="text-gray-600 mb-4">Order ID: <span class="font-mono font-semibold text-green-600">${orderId}</span></p>
