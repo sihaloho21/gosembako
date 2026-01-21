@@ -2117,27 +2117,66 @@ function openClaimWhatsApp() {
 }
 
 /**
- * Update payment method info text dynamically
+ * Update payment method info text dynamically with smooth animations
  * @param {string} method - Payment method: 'tunai', 'qris', or 'gajian'
  */
 function updatePaymentMethodInfo(method) {
     const infoContainer = document.getElementById('payment-method-info');
     const infoText = document.getElementById('payment-method-info-text');
+    const qrisDisplay = document.getElementById('qris-display');
     
     if (!infoContainer || !infoText) return;
     
     // Payment method information mapping
     const paymentInfo = {
         'tunai': 'Anda memilih pembayaran tunai. Pembayaran dilakukan secara langsung saat pesanan diterima atau diambil.',
-        'qris': 'Anda memilih pembayaran melalui QRIS. Silakan lakukan pembayaran menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS.',
+        'qris': 'Anda memilih pembayaran melalui QRIS. Silakan scan kode QR di bawah ini menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS.',
         'gajian': 'Anda memilih pembayaran gajian. Pembayaran akan ditagihkan pada periode gajian berikutnya, dengan jatuh tempo setiap tanggal 6–7 setiap bulan.'
     };
     
-    // Update text and show container
-    if (paymentInfo[method]) {
-        infoText.textContent = paymentInfo[method];
-        infoContainer.classList.remove('hidden');
-    } else {
-        infoContainer.classList.add('hidden');
+    // Hide all first with fade out animation
+    if (!infoContainer.classList.contains('hidden')) {
+        infoContainer.classList.add('opacity-0', 'scale-95');
     }
+    if (qrisDisplay && !qrisDisplay.classList.contains('hidden')) {
+        qrisDisplay.classList.add('opacity-0', 'scale-95');
+    }
+    
+    // Wait for fade out, then update content
+    setTimeout(() => {
+        // Update text and show info container
+        if (paymentInfo[method]) {
+            infoText.textContent = paymentInfo[method];
+            infoContainer.classList.remove('hidden');
+            
+            // Trigger reflow for animation
+            void infoContainer.offsetWidth;
+            
+            // Fade in with animation
+            setTimeout(() => {
+                infoContainer.classList.remove('opacity-0', 'scale-95');
+                infoContainer.classList.add('opacity-100', 'scale-100');
+            }, 10);
+        } else {
+            infoContainer.classList.add('hidden');
+        }
+        
+        // Show QRIS display only for QRIS method
+        if (qrisDisplay) {
+            if (method === 'qris') {
+                qrisDisplay.classList.remove('hidden');
+                
+                // Trigger reflow for animation
+                void qrisDisplay.offsetWidth;
+                
+                // Fade in with animation
+                setTimeout(() => {
+                    qrisDisplay.classList.remove('opacity-0', 'scale-95');
+                    qrisDisplay.classList.add('opacity-100', 'scale-100');
+                }, 10);
+            } else {
+                qrisDisplay.classList.add('hidden');
+            }
+        }
+    }, 150); // Half of transition duration
 }
