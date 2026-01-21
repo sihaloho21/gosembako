@@ -96,9 +96,23 @@
                 // Trigger discount check when phone is entered
                 const phoneInput = document.getElementById('customer-whatsapp');
                 if (phoneInput) {
+                    // Check on blur (when user leaves field)
                     phoneInput.addEventListener('blur', function() {
-                        if (window.updateOrderTotal) {
+                        if (window.updateOrderTotal && phoneInput.value.length >= 10) {
                             window.updateOrderTotal();
+                        }
+                    });
+                    
+                    // Also check on input change (real-time)
+                    phoneInput.addEventListener('input', function() {
+                        // Only check when phone number is complete (at least 10 digits)
+                        const cleaned = phoneInput.value.replace(/[^0-9]/g, '');
+                        if (cleaned.length >= 10 && window.updateOrderTotal) {
+                            // Debounce to avoid too many API calls
+                            clearTimeout(phoneInput._checkTimeout);
+                            phoneInput._checkTimeout = setTimeout(() => {
+                                window.updateOrderTotal();
+                            }, 500);
                         }
                     });
                 }
