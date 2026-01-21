@@ -2063,12 +2063,19 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param {string} claimId - The claim ID to display
  */
 function showClaimSuccessModal(claimId) {
+    console.log('showClaimSuccessModal called with claimId:', claimId);
     const modal = document.getElementById('claim-success-modal');
     const claimIdElement = document.getElementById('claim-success-id');
+    
+    console.log('Modal element:', modal);
+    console.log('Claim ID element:', claimIdElement);
     
     if (modal && claimIdElement) {
         claimIdElement.textContent = claimId;
         modal.classList.remove('hidden');
+        console.log('Modal should now be visible');
+    } else {
+        console.error('Modal or claimIdElement not found!');
     }
 }
 
