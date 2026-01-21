@@ -1,5 +1,9 @@
 // Referral Authentication System
-const SHEET_API = 'https://sheetdb.io/api/v1/f1ioa83a268s8';
+// Use the same API as configured in admin settings
+function getSheetAPI() {
+    // Get from CONFIG if available, otherwise use default
+    return CONFIG && CONFIG.getMainAPI ? CONFIG.getMainAPI() : 'https://sheetdb.io/api/v1/r82rgfhhtkbta';
+}
 
 // Tab Switching
 function switchTab(tab) {
@@ -101,6 +105,7 @@ async function handleLogin(event) {
     
     try {
         // Check if user exists
+        const SHEET_API = getSheetAPI();
         const response = await fetch(`${SHEET_API}?sheet=user_referral&whatsapp=${whatsapp}`);
         const data = await response.json();
         
@@ -120,7 +125,8 @@ async function handleLogin(event) {
         }
         
         // Update last login
-        await fetch(`${SHEET_API}/whatsapp/${whatsapp}?sheet=user_referral`, {
+        const SHEET_API_UPDATE = getSheetAPI();
+        await fetch(`${SHEET_API_UPDATE}/whatsapp/${whatsapp}?sheet=user_referral`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
@@ -180,6 +186,7 @@ async function handleRegister(event) {
     
     try {
         // Check if user already exists
+        const SHEET_API = getSheetAPI();
         const checkResponse = await fetch(`${SHEET_API}?sheet=user_referral&whatsapp=${whatsapp}`);
         const existingUser = await checkResponse.json();
         
@@ -206,7 +213,8 @@ async function handleRegister(event) {
             last_login: now
         };
         
-        const response = await fetch(`${SHEET_API}?sheet=user_referral`, {
+        const SHEET_API_POST = getSheetAPI();
+        const response = await fetch(`${SHEET_API_POST}?sheet=user_referral`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
