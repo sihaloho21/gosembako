@@ -1,6 +1,7 @@
 /**
  * Referral Discount Handler
- * Applies 10% discount for first-time buyers from referral
+ * Applies 10% discount for anyone with valid referral code
+ * Auto-credits 10,000 points to referrer immediately
  */
 
 const ReferralDiscount = (function() {
@@ -90,16 +91,8 @@ const ReferralDiscount = (function() {
             };
         }
         
-        // Check if first-time buyer
-        const isFirstTime = await isFirstTimeBuyer(phone);
-        if (!isFirstTime) {
-            return {
-                eligible: false,
-                reason: 'Discount only for first-time buyers',
-                discount: 0,
-                finalTotal: cartTotal
-            };
-        }
+        // SIMPLIFIED: No first-time buyer check
+        // Anyone with valid referral code (except self-referral) gets discount
         
         // Calculate discount
         const discountAmount = calculateDiscount(cartTotal);

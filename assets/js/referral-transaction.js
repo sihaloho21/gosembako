@@ -49,9 +49,9 @@ const ReferralTransaction = (function() {
                 discount_amount: discountAmount,
                 final_amount: finalAmount,
                 points_earned: ReferralDiscount.POINTS_REWARD,
-                status: 'pending',
+                status: 'completed', // Auto-complete immediately
                 created_at: now,
-                completed_at: ''
+                completed_at: now // Set completed time immediately
             };
             
             const response = await fetch(`${API_URL}?sheet=referral_transactions`, {
@@ -69,6 +69,10 @@ const ReferralTransaction = (function() {
             }
             
             console.log('✅ Referral transaction recorded:', transactionId);
+            
+            // Auto-credit points immediately
+            await creditPoints(referrerPhone, ReferralDiscount.POINTS_REWARD);
+            
             return transactionId;
             
         } catch (error) {
