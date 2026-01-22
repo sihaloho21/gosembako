@@ -752,7 +752,8 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
                     continue;
                 }
                 const data = await checkResponse.json();
-                existingUsers = parseSheetResponse(data);
+                existingUsers = parseSheetResponse(data)
+                    .filter(u => normalizePhoneTo08(u.whatsapp || u.phone || '') === normalizedPhone);
                 if (existingUsers && existingUsers.length > 0) {
                     console.log(`📊 Found existing user with format [${phoneToCheck}]:`, existingUsers);
                     break;
