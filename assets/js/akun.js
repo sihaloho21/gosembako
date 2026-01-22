@@ -696,6 +696,24 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         // Generate user ID
         const userId = `USR-${Date.now().toString().slice(-6)}`;
         const today = new Date().toISOString().split('T')[0];
+        const now = new Date().toLocaleString('id-ID', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        // Generate referral code: First 4 letters of name + 4 random digits
+        // e.g., "Budi Santoso" -> "BUDI" + random 1000-9999 -> "BUDI1234"
+        const nameForCode = name.replace(/\s/g, '').substring(0, 4).toUpperCase();
+        const randomDigits = Math.floor(Math.random() * 9000) + 1000;
+        const referralCode = nameForCode + randomDigits;
+        
+        // Check if user came from referral link
+        const urlParams = new URLSearchParams(window.location.search);
+        const referrerCode = urlParams.get('ref') || sessionStorage.getItem('referral_code');
         
         // Create new user
         const createResponse = await fetch(`${apiUrl}?sheet=users`, {
@@ -707,7 +725,11 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
                 whatsapp: whatsapp,
                 pin: pin,
                 tanggal_daftar: today,
-                status: 'aktif'
+                status: 'aktif',
+                referral_code: referralCode,
+                referrer_id: referrerCode || '',
+                total_points: 0,
+                created_at: now
             })
         });
         
