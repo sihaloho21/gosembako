@@ -950,7 +950,7 @@ function showOrderDetailModal(order) {
     const statusBadge = getStatusBadge(status);
     const statusBadgeElement = document.getElementById('tracking-status-badge');
     if (statusBadgeElement) {
-        statusBadgeElement.outerHTML = statusBadge;
+        statusBadgeElement.innerHTML = statusBadge;
     }
     
     // Update order details (use 'total' column from sheet)
