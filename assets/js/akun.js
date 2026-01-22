@@ -682,9 +682,35 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         
-        // Check if WhatsApp already registered
-        const checkResponse = await fetch(`${apiUrl}?sheet=users&whatsapp=${whatsapp}`);
-        const existingUsers = await checkResponse.json();
+        // ✅ FIX: Check if WhatsApp already registered
+        // Add cache buster to prevent old cached results
+        const cacheBuster = '&_t=' + Date.now();
+        const checkResponse = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(whatsapp)}${cacheBuster}`);
+        
+        if (!checkResponse.ok) {
+            throw new Error(`API error: ${checkResponse.status}`);
+        }
+        
+        let existingUsers = [];
+        try {
+            const data = await checkResponse.json();
+            // ✅ FIX: Handle different SheetDB response formats
+            // SheetDB returns: { result: [{...}] } or just [{...}]
+            if (data && typeof data === 'object') {
+                if (Array.isArray(data)) {
+                    existingUsers = data;
+                } else if (Array.isArray(data.result)) {
+                    existingUsers = data.result;
+                } else if (data.result && data.result.length > 0) {
+                    existingUsers = Array.isArray(data.result) ? data.result : [data.result];
+                }
+            }
+        } catch (parseErr) {
+            console.error('❌ Failed to parse API response:', parseErr);
+            existingUsers = [];
+        }
+        
+        console.log('📊 Check result for', whatsapp, ':', existingUsers);
         
         if (existingUsers && existingUsers.length > 0) {
             errorText.textContent = 'Nomor WhatsApp sudah terdaftar';
