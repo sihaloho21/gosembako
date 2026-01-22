@@ -348,10 +348,10 @@ if (document.readyState === 'loading') {
 }
 
 // Handle window resize
-let resizeTimeout;
+let promoResizeTimeout;
 window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
+    clearTimeout(promoResizeTimeout);
+    promoResizeTimeout = setTimeout(() => {
         if (promoBannerCarousel) {
             promoBannerCarousel.updateCarousel();
         }

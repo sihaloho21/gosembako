@@ -414,10 +414,10 @@ if (document.readyState === 'loading') {
 }
 
 // Handle window resize
-let resizeTimeout;
+let bundleResizeTimeout;
 window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
+    clearTimeout(bundleResizeTimeout);
+    bundleResizeTimeout = setTimeout(() => {
         if (bundleCarousel) {
             bundleCarousel.updateCarousel();
         }
