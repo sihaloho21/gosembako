@@ -1207,20 +1207,57 @@ function sendToWA() {
     const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value;
     const shipMethod = document.querySelector('input[name="ship-method"]:checked')?.value;
     
-    if (!name || !phone || !payMethod || !shipMethod) {
-        alert('Mohon lengkapi semua data pesanan.');
+    // Validation 1: Check if name is filled
+    if (!name || name.trim().length === 0) {
+        alert('Nama belum diisi');
         return;
     }
-
-    // Security Validation
-    if (name.trim().length < 4) {
-        alert('Nama lengkap minimal 4 karakter.');
+    
+    // Validation 2: Name must be at least 4 characters (excluding spaces)
+    const nameWithoutSpaces = name.replace(/\s/g, '');
+    if (nameWithoutSpaces.length < 4) {
+        alert('Nama belum diisi');
         return;
     }
-
+    
+    // Validation 3: Phone number validation
+    if (!phone || phone.trim().length === 0) {
+        alert('Nomor WhatsApp tidak valid');
+        return;
+    }
+    
     const cleanPhone = phone.replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 9) {
-        alert('Nomor WhatsApp wajib lebih dari 9 angka.');
+    
+    // Check minimum 10 digits
+    if (cleanPhone.length < 10) {
+        alert('Nomor WhatsApp tidak valid');
+        return;
+    }
+    
+    // Check for invalid patterns (repeated digits)
+    const invalidPatterns = [
+        /^(\d)\1{9,}$/,           // Same digit repeated (e.g., 08333333333)
+        /^08(\d)\1{8,}$/,         // 08 followed by repeated digits
+        /^(\d{2})\1{4,}$/,        // Pairs repeated (e.g., 081212121212)
+        /^(\d{3})\1{3,}$/         // Triplets repeated (e.g., 081818181818)
+    ];
+    
+    for (const pattern of invalidPatterns) {
+        if (pattern.test(cleanPhone)) {
+            alert('Nomor WhatsApp tidak valid');
+            return;
+        }
+    }
+    
+    // Validation 4: Payment method must be selected
+    if (!payMethod) {
+        alert('Pilih metode pembayaran terlebih dahulu');
+        return;
+    }
+    
+    // Validation 5: Shipping method must be selected
+    if (!shipMethod) {
+        alert('Mohon lengkapi semua data pesanan.');
         return;
     }
     
@@ -2129,9 +2166,9 @@ function updatePaymentMethodInfo(method) {
     
     // Payment method information mapping
     const paymentInfo = {
-        'tunai': 'Anda memilih pembayaran tunai. Pembayaran dilakukan secara langsung saat pesanan diterima atau diambil.',
-        'qris': 'Anda memilih pembayaran melalui QRIS. Silakan scan kode QR di bawah ini menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS.',
-        'gajian': 'Anda memilih pembayaran gajian. Pembayaran akan ditagihkan pada periode gajian berikutnya, dengan jatuh tempo setiap tanggal 6–7 setiap bulan.'
+        'tunai': 'Pembayaran dilakukan secara tunai saat pesanan diterima atau diambil.',
+        'qris': 'Pembayaran dilakukan melalui QRIS menggunakan e-wallet atau mobile banking.',
+        'gajian': 'Pembayaran ditagihkan pada periode gajian berikutnya, jatuh tempo tanggal 6–7.'
     };
     
     // Hide all first with fade out animation
