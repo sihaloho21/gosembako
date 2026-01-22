@@ -935,90 +935,6 @@ document.getElementById('edit-profile-form').addEventListener('submit', async (e
 });
 
 /**
- * Open order tracking modal
- */
-function openOrderTracking(order) {
-    // Populate order info
-    document.getElementById('tracking-order-id').textContent = order.id_pesanan || order.order_id || 'N/A';
-    document.getElementById('tracking-order-date').textContent = formatDate(order.tanggal_pesanan || order.timestamp);
-    document.getElementById('tracking-products').textContent = order.produk || order.items || 'N/A';
-    document.getElementById('tracking-total').textContent = formatCurrency(order.total_bayar || order.total || 0);
-    document.getElementById('tracking-payment').textContent = order.metode_pembayaran || order.payment_method || 'N/A';
-    document.getElementById('tracking-shipping').textContent = order.metode_pengiriman || order.shipping_method || 'N/A';
-    
-    // Set status badge
-    const status = order.status_pesanan || order.status || 'Menunggu Konfirmasi';
-    const statusBadge = document.getElementById('tracking-status-badge');
-    statusBadge.textContent = status;
-    statusBadge.className = getStatusClass(status);
-    
-    // Create timeline
-    const timeline = document.getElementById('tracking-timeline');
-    timeline.innerHTML = createTimeline(status);
-    
-    // Show modal
-    document.getElementById('order-tracking-modal').classList.remove('hidden');
-}
-
-/**
- * Close order tracking modal
- */
-function closeOrderTracking() {
-    document.getElementById('order-tracking-modal').classList.add('hidden');
-}
-
-/**
- * Create timeline based on status
- */
-function createTimeline(status) {
-    const statuses = [
-        { name: 'Menunggu Konfirmasi', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-        { name: 'Diproses', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-        { name: 'Dikirim', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
-        { name: 'Selesai', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }
-    ];
-    
-    const currentIndex = statuses.findIndex(s => s.name === status);
-    
-    return statuses.map((s, index) => {
-        const isActive = index <= currentIndex;
-        const isLast = index === statuses.length - 1;
-        
-        return `
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.icon}"></path>
-                        </svg>
-                    </div>
-                    ${!isLast ? `<div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-0.5 h-12"></div>` : ''}
-                </div>
-                <div class="flex-1 ${!isLast ? 'pb-4' : ''}">
-                    <p class="font-bold ${isActive ? 'text-gray-800' : 'text-gray-400'}">${s.name}</p>
-                    <p class="text-xs text-gray-500">${isActive && index === currentIndex ? 'Status saat ini' : ''}</p>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-/**
- * Get status class for badge
- */
-function getStatusClass(status) {
-    const statusMap = {
-        'Menunggu Konfirmasi': 'bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full',
-        'Diproses': 'bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full',
-        'Dikirim': 'bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full',
-        'Selesai': 'bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full',
-        'Dibatalkan': 'bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full'
-    };
-    
-    return statusMap[status] || statusMap['Menunggu Konfirmasi'];
-}
-
-/**
  * Show order detail modal with animated timeline
  */
 function showOrderDetailModal(order) {
@@ -1149,7 +1065,7 @@ createOrderCard = function(order) {
     // Add click event to open tracking
     card.style.cursor = 'pointer';
     card.addEventListener('click', () => {
-        openOrderTracking(order);
+        showOrderDetailModal(order);
     });
     
     return card;
