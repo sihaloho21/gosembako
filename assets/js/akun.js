@@ -249,6 +249,21 @@ async function loadOrderHistory(user) {
             return;
         }
         
+        // Filter orders to ensure only user's orders (double check phone match)
+        orders = orders.filter(order => {
+            const orderPhone = order.phone || order.whatsapp || '';
+            // Remove leading '0' or '+62' for comparison
+            const normalizedOrderPhone = orderPhone.replace(/^(\+62|62|0)/, '');
+            const normalizedUserPhone = user.whatsapp.replace(/^(\+62|62|0)/, '');
+            return normalizedOrderPhone === normalizedUserPhone;
+        });
+        
+        // Check again after filtering
+        if (orders.length === 0) {
+            emptyDiv.classList.remove('hidden');
+            return;
+        }
+        
         // Sort orders by date (newest first)
         orders.sort((a, b) => {
             const dateA = new Date(a.tanggal_pesanan || a.timestamp || 0);
@@ -351,7 +366,7 @@ function createPagination(currentPage, totalPages) {
  */
 function createOrderCard(order) {
     const card = document.createElement('div');
-    card.className = 'border border-gray-200 rounded-xl p-4 hover:border-green-300 transition';
+    card.className = 'border border-gray-200 rounded-xl p-3 hover:border-green-300 transition cursor-pointer';
     
     // Format date
     const orderDate = formatDate(order.tanggal_pesanan || order.timestamp);
@@ -360,42 +375,58 @@ function createOrderCard(order) {
     const totalBayar = formatCurrency(order.total_bayar || order.total || 0);
     
     // Get status badge
-    const statusBadge = getStatusBadge(order.status_pesanan || order.status || 'Menunggu Konfirmasi');
+    const status = order.status || 'Menunggu';
+    const statusBadge = getStatusBadge(status);
+    
+    // Get product name and truncate for mobile
+    const productName = order.produk || order.items || order.product_name || 'N/A';
+    const truncatedProduct = truncateText(productName, 20);
+    
+    // Get Order ID from 'id' column
+    const orderId = order.id || 'N/A';
     
     card.innerHTML = `
-        <div class="flex justify-between items-start mb-3">
-            <div>
-                <p class="text-xs text-gray-500 mb-1">${orderDate}</p>
-                <p class="font-bold text-gray-800">Order ID: <span class="text-green-600">${order.id_pesanan || order.order_id || 'N/A'}</span></p>
+        <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+                <p class="text-xs text-gray-500 mb-1">${status}</p>
+                <p class="text-xs font-bold text-gray-800">Order ID: <span class="text-green-600">${orderId}</span></p>
             </div>
             ${statusBadge}
         </div>
         
-        <div class="border-t border-gray-100 pt-3 space-y-2">
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Produk:</span>
-                <span class="font-semibold text-gray-800 text-right">${order.produk || order.items || order.product_name || 'N/A'}</span>
+        <div class="border-t border-gray-100 pt-2 space-y-1.5">
+            <div class="text-sm">
+                <p class="text-gray-600 text-xs mb-0.5">Produk:</p>
+                <p class="font-semibold text-gray-800 lg:hidden">${truncatedProduct}</p>
+                <p class="font-semibold text-gray-800 hidden lg:block">${productName}</p>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
                 <span class="text-gray-600">Qty:</span>
                 <span class="font-semibold text-gray-800">${order.qty || order.quantity || order.jumlah || 'N/A'}</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
                 <span class="text-gray-600">Poin:</span>
                 <span class="font-semibold text-amber-600">+${order.poin || order.points || 0}</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
                 <span class="text-gray-600">Total Bayar:</span>
                 <span class="font-bold text-green-600">${totalBayar}</span>
             </div>
         </div>
         
-        <div class="mt-4 pt-3 border-t border-gray-100">
-            <a href="index.html" class="block w-full text-center bg-green-50 hover:bg-green-100 text-green-700 font-bold py-2 rounded-lg transition text-sm">
+        <div class="mt-3 pt-2 border-t border-gray-100">
+            <button onclick="window.location.href='index.html'" class="block w-full text-center bg-green-50 hover:bg-green-100 text-green-700 font-bold py-1.5 rounded-lg transition text-xs">
                 Belanja Lagi
-            </a>
+            </button>
         </div>
     `;
+    
+    // Add click event to show order detail modal
+    card.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+            showOrderDetailModal(order);
+        }
+    });
     
     return card;
 }
@@ -405,14 +436,14 @@ function createOrderCard(order) {
  */
 function getStatusBadge(status) {
     const statusMap = {
-        'Menunggu Konfirmasi': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Menunggu' },
+        'Menunggu': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Menunggu' },
         'Diproses': { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Diproses' },
         'Dikirim': { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Dikirim' },
-        'Selesai': { bg: 'bg-green-100', text: 'text-green-700', label: 'Selesai' },
+        'Diterima': { bg: 'bg-green-100', text: 'text-green-700', label: 'Diterima' },
         'Dibatalkan': { bg: 'bg-red-100', text: 'text-red-700', label: 'Dibatalkan' }
     };
     
-    const statusInfo = statusMap[status] || statusMap['Menunggu Konfirmasi'];
+    const statusInfo = statusMap[status] || statusMap['Menunggu'];
     
     return `
         <span class="${statusInfo.bg} ${statusInfo.text} text-xs font-bold px-3 py-1 rounded-full">
@@ -440,6 +471,15 @@ function formatDate(dateString) {
     };
     
     return date.toLocaleDateString('id-ID', options);
+}
+
+/**
+ * Truncate text with ellipsis
+ */
+function truncateText(text, maxLength) {
+    if (!text) return 'N/A';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 /**
@@ -912,6 +952,100 @@ function getStatusClass(status) {
     };
     
     return statusMap[status] || statusMap['Menunggu Konfirmasi'];
+}
+
+/**
+ * Show order detail modal with animated timeline
+ */
+function showOrderDetailModal(order) {
+    // Update order info
+    document.getElementById('tracking-order-id').textContent = order.id || 'N/A';
+    document.getElementById('tracking-order-date').textContent = formatDate(order.tanggal_pesanan || order.timestamp);
+    
+    // Update status badge
+    const status = order.status || 'Menunggu';
+    const statusBadge = getStatusBadge(status);
+    document.getElementById('tracking-status-badge').outerHTML = statusBadge;
+    
+    // Update order details
+    document.getElementById('tracking-products').textContent = order.produk || order.items || order.product_name || 'N/A';
+    document.getElementById('tracking-total').textContent = formatCurrency(order.total_bayar || order.total || 0);
+    document.getElementById('tracking-payment').textContent = order.metode_pembayaran || order.payment_method || 'N/A';
+    document.getElementById('tracking-shipping').textContent = order.metode_pengiriman || order.shipping_method || 'N/A';
+    
+    // Create animated timeline
+    const timeline = createAnimatedTimeline(status);
+    document.getElementById('tracking-timeline').innerHTML = timeline;
+    
+    // Show modal
+    document.getElementById('order-tracking-modal').classList.remove('hidden');
+}
+
+/**
+ * Create animated status timeline
+ */
+function createAnimatedTimeline(currentStatus) {
+    const statuses = [
+        { name: 'Menunggu', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', key: 'Menunggu' },
+        { name: 'Diproses', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', key: 'Diproses' },
+        { name: 'Dikirim', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4', key: 'Dikirim' },
+        { name: 'Diterima', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', key: 'Diterima' }
+    ];
+    
+    // Find current status index
+    let currentIndex = statuses.findIndex(s => s.key === currentStatus);
+    
+    // Handle Dibatalkan status separately
+    if (currentStatus === 'Dibatalkan') {
+        return `
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="bg-red-500 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <p class="font-bold text-red-600">Dibatalkan</p>
+                    <p class="text-xs text-gray-500">Pesanan telah dibatalkan</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    // If status not found, default to first status
+    if (currentIndex === -1) currentIndex = 0;
+    
+    return statuses.map((s, index) => {
+        const isActive = index <= currentIndex;
+        const isCurrent = index === currentIndex;
+        const isLast = index === statuses.length - 1;
+        
+        return `
+            <div class="flex gap-4">
+                <div class="flex flex-col items-center">
+                    <div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isCurrent ? 'animate-pulse' : ''}">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.icon}"></path>
+                        </svg>
+                    </div>
+                    ${!isLast ? `<div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-0.5 h-12 transition-all duration-500"></div>` : ''}
+                </div>
+                <div class="flex-1 ${!isLast ? 'pb-4' : ''}">
+                    <p class="font-bold ${isActive ? 'text-gray-800' : 'text-gray-400'}">${s.name}</p>
+                    <p class="text-xs ${isCurrent ? 'text-green-600 font-semibold' : 'text-gray-500'}">${isCurrent ? '← Status saat ini' : ''}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Close order tracking modal
+ */
+function closeOrderTracking() {
+    document.getElementById('order-tracking-modal').classList.add('hidden');
 }
 
 /**
