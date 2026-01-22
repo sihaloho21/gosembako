@@ -970,10 +970,10 @@ function showOrderDetailModal(order) {
  */
 function createAnimatedTimeline(currentStatus) {
     const statuses = [
-        { name: 'Menunggu', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', key: 'Menunggu' },
-        { name: 'Diproses', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', key: 'Diproses' },
-        { name: 'Dikirim', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4', key: 'Dikirim' },
-        { name: 'Diterima', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', key: 'Diterima' }
+        { name: 'Menunggu', gif: 'wait.gif', key: 'Menunggu' },
+        { name: 'Diproses', gif: 'grocery-basket.gif', key: 'Diproses' },
+        { name: 'Dikirim', gif: 'grocery.gif', key: 'Dikirim' },
+        { name: 'Diterima', gif: 'shipping.gif', key: 'Diterima' }
     ];
     
     // Find current status index
@@ -1009,10 +1009,8 @@ function createAnimatedTimeline(currentStatus) {
                 
                 return `
                     <div class="flex flex-col items-center flex-1">
-                        <div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-10 h-10 rounded-full flex items-center justify-center ${isCurrent ? 'animate-pulse' : ''}">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.icon}"></path>
-                            </svg>
+                        <div class="${isActive ? 'bg-green-50' : 'bg-gray-100'} w-12 h-12 rounded-full flex items-center justify-center ${isCurrent ? 'ring-2 ring-green-500 ring-offset-2' : ''}">
+                            <img src="assets/images/${s.gif}" alt="${s.name}" class="w-8 h-8 object-contain ${isActive ? '' : 'opacity-40'}">
                         </div>
                         <p class="text-[10px] font-semibold mt-2 text-center ${isActive ? 'text-gray-800' : 'text-gray-400'}">${s.name}</p>
                         ${isCurrent ? '<p class="text-[8px] text-green-600 font-bold mt-0.5">● Saat ini</p>' : '<p class="text-[8px] text-transparent mt-0.5">●</p>'}
