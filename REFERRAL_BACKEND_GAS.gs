@@ -39,6 +39,19 @@ const REFERRAL_CONFIG = {
 };
 
 // ============================================================================
+// SHEET SCHEMA DEFINITIONS (for audit)
+// ============================================================================
+
+const REFERRAL_SHEET_DEFS = {
+  users: ['id','nama','whatsapp','pin','referral_code','referrer_id','total_points','status','created_at','updated_at'],
+  referrals: ['id','referrer_phone','referrer_code','referred_phone','referred_name','status','first_order_id','created_at','completed_at'],
+  points_history: ['id','user_phone','referral_code','transaction_date','type','amount','balance_before','balance_after','description','source_id','created_at'],
+  vouchers: ['voucher_code','type','discount_amount','referrer_phone','referred_phone','status','created_at','expiry_date','used_at','order_id','generated_by','notes'],
+  orders: ['order_id','phone','name','total_amount','status','created_at','used_voucher','referral_source'],
+  settings: ['key','value','notes']
+};
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
@@ -531,15 +544,100 @@ function doGet(e) {
       };
       break;
       
+    case 'auditSheets':
+      const sheetId = e.parameter.spreadsheetId || SPREADSHEET_ID;
+      const fix = (e.parameter.fix || 'false') === 'true';
+      const auditResult = auditReferralSheetsById(sheetId, fix);
+      response = {
+        success: true,
+        result: auditResult
+      };
+      break;
+      
     default:
       response = {
         success: false,
-        message: 'Unknown action. Available: getStats, test'
+        message: 'Unknown action. Available: getStats, test, auditSheets'
       };
   }
   
   return ContentService.createTextOutput(JSON.stringify(response))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============================================================================
+// AUDIT FUNCTIONS (verify & fix sheet structure)
+// ============================================================================
+
+/**
+ * Audit referral sheets in a target spreadsheet
+ * @param {string} spreadsheetId - Target spreadsheet ID
+ * @param {boolean} fix - If true, auto-create/fix missing sheets and headers
+ * @returns {object} Audit report
+ */
+function auditReferralSheetsById(spreadsheetId, fix = false) {
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetId);
+    const report = {
+      spreadsheetId,
+      timestamp: new Date().toISOString(),
+      ok: true,
+      missingSheets: [],
+      headerIssues: [],
+      created: [],
+      fixedHeaders: []
+    };
+
+    Object.entries(REFERRAL_SHEET_DEFS).forEach(([name, expectedHeaders]) => {
+      let sh = ss.getSheetByName(name);
+      
+      if (!sh) {
+        report.ok = false;
+        report.missingSheets.push(name);
+        if (fix) {
+          sh = ss.insertSheet(name);
+          sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+          sh.setFrozenRows(1);
+          report.created.push(name);
+        }
+        return;
+      }
+      
+      // Check headers
+      const firstRow = sh.getRange(1, 1, 1, expectedHeaders.length).getValues()[0] || [];
+      const mismatch = expectedHeaders.some((h, i) => (firstRow[i] || '').toString().trim() !== h);
+      
+      if (mismatch) {
+        report.ok = false;
+        report.headerIssues.push({
+          sheet: name,
+          expected: expectedHeaders,
+          found: firstRow
+        });
+        if (fix) {
+          sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+          sh.setFrozenRows(1);
+          report.fixedHeaders.push(name);
+        }
+      }
+    });
+
+    return report;
+  } catch (err) {
+    return {
+      spreadsheetId,
+      ok: false,
+      error: String(err),
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+/**
+ * Audit current active spreadsheet (convenience wrapper)
+ */
+function auditCurrentSheets(fix = false) {
+  return auditReferralSheetsById(SPREADSHEET_ID, fix);
 }
 
 // ============================================================================
