@@ -158,7 +158,8 @@ function saveLoggedInUser(user) {
         id: user.id,
         nama: user.nama,
         whatsapp: user.whatsapp,
-        tanggal_daftar: user.tanggal_daftar
+        tanggal_daftar: user.tanggal_daftar,
+        referral_code: user.referral_code || user.whatsapp // fallback to phone if no referral_code
     }));
 }
 

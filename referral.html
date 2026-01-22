@@ -273,10 +273,34 @@
     <script src="assets/js/api-service.js"></script>
     <script src="assets/js/referral-helper.js"></script>
     <script>
-        // Get logged in user
+        // ✅ FIX: Get logged in user - use correct localStorage key
         function getLoggedInUser() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            return user;
+            // Check gosembako_user (set by akun.js during login)
+            const userJson = localStorage.getItem('gosembako_user');
+            if (userJson) {
+                try {
+                    const user = JSON.parse(userJson);
+                    console.log('✅ User found in gosembako_user:', user);
+                    return user;
+                } catch (e) {
+                    console.error('❌ Error parsing gosembako_user:', e);
+                }
+            }
+            
+            // Fallback: check old 'user' key for backward compatibility
+            const oldUserJson = localStorage.getItem('user');
+            if (oldUserJson) {
+                try {
+                    const user = JSON.parse(oldUserJson);
+                    console.log('✅ User found in user (legacy):', user);
+                    return user;
+                } catch (e) {
+                    console.error('❌ Error parsing user:', e);
+                }
+            }
+            
+            console.warn('❌ No logged in user found');
+            return null;
         }
 
         // Switch tabs
@@ -304,11 +328,18 @@
         async function loadReferralData() {
             const user = getLoggedInUser();
             
-            if (!user || !user.referral_code) {
+            console.log('🔍 Checking user login status:', user);
+            
+            if (!user) {
+                console.warn('❌ User not logged in');
                 document.getElementById('not-logged-in').classList.remove('hidden');
                 document.getElementById('logged-in-content').classList.add('hidden');
                 return;
             }
+
+            // Use referral_code or fallback to whatsapp
+            const referralCode = user.referral_code || user.whatsapp;
+            console.log('✅ User logged in, referral code:', referralCode);
 
             // Show logged in content
             document.getElementById('not-logged-in').classList.add('hidden');
@@ -316,11 +347,11 @@
             
             // Update welcome
             document.getElementById('welcome-name').textContent = `Halo, ${user.nama}! 👋`;
-            document.getElementById('referral-code').textContent = user.referral_code;
+            document.getElementById('referral-code').textContent = referralCode;
 
             // Get stats dari GAS
             try {
-                const stats = await getReferralStatsFromGAS(user.referral_code);
+                const stats = await getReferralStatsFromGAS(referralCode);
                 
                 if (stats.success) {
                     document.getElementById('stat-referred').textContent = stats.total_referred;
