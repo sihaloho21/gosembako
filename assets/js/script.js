@@ -68,7 +68,10 @@ async function fetchProducts() {
         
         allProducts = products.map(p => {
             const cashPrice = parseInt(p.harga) || 0;
-            const gajianInfo = calculateGajianPrice(cashPrice);
+            // ✅ Add safety check for calculateGajianPrice
+            const gajianInfo = typeof calculateGajianPrice === 'function' 
+                ? calculateGajianPrice(cashPrice)
+                : { price: cashPrice, daysLeft: 0, markupPercent: 0 };
             
             let category = p.kategori || 'Bahan Pokok';
             if (!p.kategori) {
@@ -380,7 +383,9 @@ function proceedAddToCart(p, event, qty = 1) {
         itemToAdd.sku = selectedVariation.sku;
         itemToAdd.stok = selectedVariation.stok;
         // Recalculate gajian price for variation
-        const gajianInfo = calculateGajianPrice(selectedVariation.harga);
+        const gajianInfo = typeof calculateGajianPrice === 'function'
+            ? calculateGajianPrice(selectedVariation.harga)
+            : { price: selectedVariation.harga, daysLeft: 0, markupPercent: 0 };
         itemToAdd.hargaGajian = gajianInfo.price;
     }
 
@@ -845,7 +850,9 @@ function selectVariation(v, index) {
         qtyInput.oninput({ target: qtyInput });
     } else {
         // Fallback if qtyInput is not found
-        const gajianInfo = calculateGajianPrice(v.harga);
+        const gajianInfo = typeof calculateGajianPrice === 'function'
+            ? calculateGajianPrice(v.harga)
+            : { price: v.harga, daysLeft: 0, markupPercent: 0 };
         updateModalPrices(v.harga, gajianInfo.price, v.harga_coret || 0);
     }
 }
@@ -899,7 +906,9 @@ function proceedDirectOrder(p) {
         itemToAdd.harga = selectedVariation.harga;
         itemToAdd.sku = selectedVariation.sku;
         itemToAdd.stok = selectedVariation.stok;
-        const gajianInfo = calculateGajianPrice(selectedVariation.harga);
+        const gajianInfo = typeof calculateGajianPrice === 'function'
+            ? calculateGajianPrice(selectedVariation.harga)
+            : { price: selectedVariation.harga, daysLeft: 0, markupPercent: 0 };
         itemToAdd.hargaGajian = gajianInfo.price;
     }
 
