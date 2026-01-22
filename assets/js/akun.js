@@ -682,35 +682,58 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         
-        // ✅ FIX: Check if WhatsApp already registered
-        // Add cache buster to prevent old cached results
-        const cacheBuster = '&_t=' + Date.now();
-        const checkResponse = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(whatsapp)}${cacheBuster}`);
+        // ✅ FIX: Check if WhatsApp already registered with multiple format checks
+        // Normalize and try different phone formats (with/without spaces, with/without +62)
+        const normalizePhone = (phone) => phone.replace(/[\s\-().]/g, '');
+        const normalizedInput = normalizePhone(whatsapp);
         
-        if (!checkResponse.ok) {
-            throw new Error(`API error: ${checkResponse.status}`);
-        }
+        // Generate all possible phone formats to check
+        const phonesToCheck = [
+            whatsapp,  // Original format
+            normalizedInput,  // No spaces
+            normalizedInput.replace(/^62/, '+62'),  // Add +62 if removed
+            '+' + normalizedInput,  // Add + if missing
+        ];
         
         let existingUsers = [];
-        try {
-            const data = await checkResponse.json();
-            // ✅ FIX: Handle different SheetDB response formats
-            // SheetDB returns: { result: [{...}] } or just [{...}]
-            if (data && typeof data === 'object') {
-                if (Array.isArray(data)) {
-                    existingUsers = data;
-                } else if (Array.isArray(data.result)) {
-                    existingUsers = data.result;
-                } else if (data.result && data.result.length > 0) {
-                    existingUsers = Array.isArray(data.result) ? data.result : [data.result];
+        const cacheBuster = '&_t=' + Date.now();
+        
+        console.log('🔍 Checking phone formats:', phonesToCheck);
+        
+        // Try to find user with any of the phone formats
+        for (const phoneToCheck of phonesToCheck) {
+            try {
+                const checkResponse = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(phoneToCheck)}${cacheBuster}`);
+                
+                if (!checkResponse.ok) {
+                    console.warn(`API error for ${phoneToCheck}: ${checkResponse.status}`);
+                    continue;
                 }
+                
+                const data = await checkResponse.json();
+                
+                // ✅ FIX: Handle different SheetDB response formats
+                if (data && typeof data === 'object') {
+                    if (Array.isArray(data)) {
+                        existingUsers = data;
+                    } else if (Array.isArray(data.result)) {
+                        existingUsers = data.result;
+                    } else if (data.result && data.result.length > 0) {
+                        existingUsers = Array.isArray(data.result) ? data.result : [data.result];
+                    }
+                }
+                
+                if (existingUsers && existingUsers.length > 0) {
+                    console.log(`📊 Found existing user with format [${phoneToCheck}]:`, existingUsers);
+                    break;  // Found user, stop checking other formats
+                }
+            } catch (err) {
+                console.warn(`Check failed for ${phoneToCheck}:`, err.message);
+                continue;
             }
-        } catch (parseErr) {
-            console.error('❌ Failed to parse API response:', parseErr);
-            existingUsers = [];
         }
         
-        console.log('📊 Check result for', whatsapp, ':', existingUsers);
+        console.log('📊 Final check result for', whatsapp, ':', existingUsers);
         
         if (existingUsers && existingUsers.length > 0) {
             errorText.textContent = 'Nomor WhatsApp sudah terdaftar';
@@ -742,6 +765,16 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         const urlParams = new URLSearchParams(window.location.search);
         const referrerCode = urlParams.get('ref') || sessionStorage.getItem('referral_code');
         
+        // ✅ Normalize phone number before saving (remove spaces, add +62 if needed)
+        const normalizePhone = (phone) => {
+            let normalized = phone.replace(/[\s\-().]/g, '');
+            if (!normalized.startsWith('+')) {
+                normalized = '+' + normalized;
+            }
+            return normalized;
+        };
+        const normalizedWhatsapp = normalizePhone(whatsapp);
+        
         // Create new user
         const createResponse = await fetch(`${apiUrl}?sheet=users`, {
             method: 'POST',
@@ -749,7 +782,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             body: JSON.stringify({
                 id: userId,
                 nama: name,
-                whatsapp: whatsapp,
+                whatsapp: normalizedWhatsapp,
                 pin: pin,
                 tanggal_daftar: today,
                 status: 'aktif',
