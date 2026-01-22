@@ -370,10 +370,8 @@ function createOrderCard(order) {
     
     // Format date
     const orderDate = formatDate(order.tanggal_pesanan || order.timestamp);
-    
-    // Format price
-    const totalBayar = formatCurrency(order.total_bayar || order.total || 0);
-    
+      // Format total bayar (use 'total' column from sheet)
+    const totalBayar = formatCurrency(order.total || order.total_bayar || 0);  
     // Get status badge
     const status = order.status || 'Menunggu';
     const statusBadge = getStatusBadge(status);
@@ -434,6 +432,9 @@ function createOrderCard(order) {
  * Get status badge HTML
  */
 function getStatusBadge(status) {
+    // Normalize status from admin (Terima → Diterima, etc.)
+    const normalizedStatus = normalizeStatus(status);
+    
     const statusMap = {
         'Menunggu': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Menunggu' },
         'Diproses': { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Diproses' },
@@ -442,13 +443,41 @@ function getStatusBadge(status) {
         'Dibatalkan': { bg: 'bg-red-100', text: 'text-red-700', label: 'Dibatalkan' }
     };
     
-    const statusInfo = statusMap[status] || statusMap['Menunggu'];
+    const statusInfo = statusMap[normalizedStatus] || statusMap['Menunggu'];
     
-    return `
-        <span class="${statusInfo.bg} ${statusInfo.text} text-xs font-bold px-3 py-1 rounded-full">
-            ${statusInfo.label}
-        </span>
-    `;
+    return `<span class="${statusInfo.bg} ${statusInfo.text} text-xs font-bold px-3 py-1 rounded-full">${statusInfo.label}</span>`;
+}
+
+/**
+ * Normalize status from admin to user format
+ */
+function normalizeStatus(status) {
+    if (!status) return 'Menunggu';
+    
+    // Convert to lowercase for comparison
+    const statusLower = status.toLowerCase().trim();
+    
+    // Map admin status to user status
+    const statusMapping = {
+        'menunggu': 'Menunggu',
+        'pending': 'Menunggu',
+        'diproses': 'Diproses',
+        'proses': 'Diproses',
+        'processing': 'Diproses',
+        'dikirim': 'Dikirim',
+        'kirim': 'Dikirim',
+        'shipped': 'Dikirim',
+        'diterima': 'Diterima',
+        'terima': 'Diterima',  // Admin uses 'Terima'
+        'selesai': 'Diterima',
+        'completed': 'Diterima',
+        'dibatalkan': 'Dibatalkan',
+        'batal': 'Dibatalkan',
+        'cancelled': 'Dibatalkan',
+        'canceled': 'Dibatalkan'
+    };
+    
+    return statusMapping[statusLower] || status;
 }
 
 /**
@@ -961,17 +990,17 @@ function showOrderDetailModal(order) {
     document.getElementById('tracking-order-id').textContent = order.id || 'N/A';
     document.getElementById('tracking-order-date').textContent = formatDate(order.tanggal || order.tanggal_pesanan || order.timestamp);
     
-    // Update status badge
-    const status = order.status || 'Menunggu';
+    // Update status badge (normalize first)
+    const status = normalizeStatus(order.status || 'Menunggu');
     const statusBadge = getStatusBadge(status);
     const statusBadgeElement = document.getElementById('tracking-status-badge');
     if (statusBadgeElement) {
         statusBadgeElement.outerHTML = statusBadge;
     }
     
-    // Update order details
+    // Update order details (use 'total' column from sheet)
     document.getElementById('tracking-products').textContent = order.produk || order.items || order.product_name || 'N/A';
-    document.getElementById('tracking-total').textContent = formatCurrency(order.total_bayar || order.total || 0);
+    document.getElementById('tracking-total').textContent = formatCurrency(order.total || order.total_bayar || 0);
     
     // Create animated timeline
     const timeline = createAnimatedTimeline(status);
