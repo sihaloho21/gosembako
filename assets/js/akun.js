@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function showLogin() {
     document.getElementById('login-section').classList.remove('hidden');
+    document.getElementById('register-section').classList.add('hidden');
+    document.getElementById('forgot-pin-section').classList.add('hidden');
     document.getElementById('dashboard-section').classList.add('hidden');
 }
 
@@ -29,11 +31,16 @@ function showLogin() {
  */
 function showDashboard(user) {
     document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('register-section').classList.add('hidden');
+    document.getElementById('forgot-pin-section').classList.add('hidden');
     document.getElementById('dashboard-section').classList.remove('hidden');
     
     // Display user info
     document.getElementById('user-name').textContent = user.nama;
     document.getElementById('user-whatsapp').textContent = `+62 ${user.whatsapp}`;
+    
+    // Load loyalty points from user_points sheet
+    loadLoyaltyPoints(user);
     
     // Load order history
     loadOrderHistory(user);
@@ -174,6 +181,41 @@ function logout() {
 }
 
 /**
+ * Load loyalty points from user_points sheet
+ */
+async function loadLoyaltyPoints(user) {
+    try {
+        const apiUrl = CONFIG.getMainApiUrl();
+        
+        // Fetch points by phone column from user_points sheet
+        const response = await fetch(`${apiUrl}?sheet=user_points&phone=${user.whatsapp}`);
+        
+        if (!response.ok) {
+            console.error('Failed to fetch loyalty points');
+            return;
+        }
+        
+        const pointsData = await response.json();
+        
+        // Check if user has points record
+        if (pointsData && pointsData.length > 0) {
+            const userPoints = pointsData[0];
+            const points = parseInt(userPoints.points || userPoints.poin || 0);
+            
+            // Update display
+            document.getElementById('loyalty-points').textContent = points;
+        } else {
+            // No points record, default to 0
+            document.getElementById('loyalty-points').textContent = '0';
+        }
+        
+    } catch (error) {
+        console.error('Error loading loyalty points:', error);
+        document.getElementById('loyalty-points').textContent = '0';
+    }
+}
+
+/**
  * Load order history for user
  */
 async function loadOrderHistory(user) {
@@ -189,20 +231,14 @@ async function loadOrderHistory(user) {
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         
-        // Try to fetch by id_pengguna first, fallback to whatsapp
-        let response = await fetch(`${apiUrl}?sheet=orders&id_pengguna=${user.id}`);
+        // Fetch orders by phone column from existing orders sheet
+        let response = await fetch(`${apiUrl}?sheet=orders&phone=${user.whatsapp}`);
         
         if (!response.ok) {
             throw new Error('Gagal memuat riwayat pesanan');
         }
         
         let orders = await response.json();
-        
-        // If no orders found by id_pengguna, try by whatsapp
-        if (!orders || orders.length === 0) {
-            response = await fetch(`${apiUrl}?sheet=orders&whatsapp=${user.whatsapp}`);
-            orders = await response.json();
-        }
         
         // Hide loading
         loadingDiv.classList.add('hidden');
@@ -220,11 +256,13 @@ async function loadOrderHistory(user) {
             return dateB - dateA;
         });
         
-        // Display orders
-        orders.forEach(order => {
-            const orderCard = createOrderCard(order);
-            orderList.appendChild(orderCard);
-        });
+        // Store all orders for pagination
+        window.allOrders = orders;
+        window.currentPage = 1;
+        window.ordersPerPage = 10;
+        
+        // Display first page
+        displayOrderPage(1);
         
     } catch (error) {
         console.error('Error loading order history:', error);
@@ -239,6 +277,73 @@ async function loadOrderHistory(user) {
             </div>
         `;
     }
+}
+
+/**
+ * Display orders for specific page
+ */
+function displayOrderPage(page) {
+    const orderList = document.getElementById('order-list');
+    const paginationDiv = document.getElementById('order-pagination');
+    
+    if (!window.allOrders || window.allOrders.length === 0) return;
+    
+    const totalOrders = window.allOrders.length;
+    const totalPages = Math.ceil(totalOrders / window.ordersPerPage);
+    const startIndex = (page - 1) * window.ordersPerPage;
+    const endIndex = Math.min(startIndex + window.ordersPerPage, totalOrders);
+    
+    // Clear order list
+    orderList.innerHTML = '';
+    
+    // Display orders for current page
+    for (let i = startIndex; i < endIndex; i++) {
+        const orderCard = createOrderCard(window.allOrders[i]);
+        orderList.appendChild(orderCard);
+    }
+    
+    // Update pagination
+    if (totalPages > 1) {
+        paginationDiv.classList.remove('hidden');
+        paginationDiv.innerHTML = createPagination(page, totalPages);
+    } else {
+        paginationDiv.classList.add('hidden');
+    }
+    
+    window.currentPage = page;
+}
+
+/**
+ * Create pagination HTML
+ */
+function createPagination(currentPage, totalPages) {
+    let html = '<div class="flex justify-center items-center gap-2 mt-6">';
+    
+    // Previous button
+    if (currentPage > 1) {
+        html += `<button onclick="displayOrderPage(${currentPage - 1})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-sm">← Prev</button>`;
+    }
+    
+    // Page numbers
+    html += '<div class="flex gap-1">';
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+            html += `<button class="px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm">${i}</button>`;
+        } else if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            html += `<button onclick="displayOrderPage(${i})" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-bold text-sm">${i}</button>`;
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            html += '<span class="px-2 py-2 text-gray-500">...</span>';
+        }
+    }
+    html += '</div>';
+    
+    // Next button
+    if (currentPage < totalPages) {
+        html += `<button onclick="displayOrderPage(${currentPage + 1})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-sm">Next →</button>`;
+    }
+    
+    html += '</div>';
+    return html;
 }
 
 /**
@@ -269,19 +374,19 @@ function createOrderCard(order) {
         <div class="border-t border-gray-100 pt-3 space-y-2">
             <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Produk:</span>
-                <span class="font-semibold text-gray-800 text-right">${order.produk || order.items || 'N/A'}</span>
+                <span class="font-semibold text-gray-800 text-right">${order.produk || order.items || order.product_name || 'N/A'}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Qty:</span>
+                <span class="font-semibold text-gray-800">${order.qty || order.quantity || order.jumlah || 'N/A'}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Poin:</span>
+                <span class="font-semibold text-amber-600">+${order.poin || order.points || 0}</span>
             </div>
             <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Total Bayar:</span>
                 <span class="font-bold text-green-600">${totalBayar}</span>
-            </div>
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Pembayaran:</span>
-                <span class="font-semibold text-gray-800">${order.metode_pembayaran || order.payment_method || 'N/A'}</span>
-            </div>
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Pengiriman:</span>
-                <span class="font-semibold text-gray-800">${order.metode_pengiriman || order.shipping_method || 'N/A'}</span>
             </div>
         </div>
         
@@ -810,37 +915,25 @@ function getStatusClass(status) {
 }
 
 /**
- * Open loyalty modal
+ * Open reward modal (using existing modal from homepage)
  */
-function openLoyaltyModal() {
-    // For now, just show the modal with dummy points
-    // Logic will be implemented later
-    const points = parseInt(document.getElementById('loyalty-points').textContent) || 0;
-    document.getElementById('loyalty-modal-points').textContent = points;
+function openRewardModal() {
+    // Get user's WhatsApp number
+    const user = getLoggedInUser();
+    if (!user) return;
     
-    document.getElementById('loyalty-modal').classList.remove('hidden');
-}
-
-/**
- * Close loyalty modal
- */
-function closeLoyaltyModal() {
-    document.getElementById('loyalty-modal').classList.add('hidden');
-}
-
-/**
- * Redeem reward (placeholder)
- */
-function redeemReward(points, rewardName) {
-    const userPoints = parseInt(document.getElementById('loyalty-points').textContent) || 0;
-    
-    if (userPoints < points) {
-        alert(`Poin Anda tidak cukup.\n\nDibutuhkan: ${points} poin\nPoin Anda: ${userPoints} poin`);
-        return;
+    // Set WhatsApp input in reward modal
+    const whatsappInput = document.getElementById('reward-phone');
+    if (whatsappInput) {
+        whatsappInput.value = user.whatsapp;
     }
     
-    // Placeholder - logic will be implemented later
-    alert(`Fitur penukaran reward akan segera hadir!\n\nReward: ${rewardName}\nPoin: ${points}`);
+    // Show the reward modal from homepage script
+    if (typeof showRewardModal === 'function') {
+        showRewardModal();
+    } else {
+        alert('Fitur reward akan segera hadir!');
+    }
 }
 
 /**

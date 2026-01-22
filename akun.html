@@ -35,10 +35,10 @@
     </header>
 
     <!-- Main Container -->
-    <div class="container mx-auto px-4 py-8 max-w-md">
+    <div class="container mx-auto px-4 py-8 max-w-md lg:max-w-6xl">
         
         <!-- Login Section -->
-        <div id="login-section" class="fade-in">
+        <div id="login-section" class="fade-in max-w-md mx-auto">
             <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
                 <!-- Icon -->
                 <div class="text-center mb-6">
@@ -122,7 +122,7 @@
         </div>
 
         <!-- Registration Section (Hidden by default) -->
-        <div id="register-section" class="hidden fade-in">
+        <div id="register-section" class="hidden fade-in max-w-md mx-auto">
             <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
                 <!-- Icon -->
                 <div class="text-center mb-6">
@@ -240,7 +240,7 @@
         </div>
 
         <!-- Forgot PIN Section (Hidden by default) -->
-        <div id="forgot-pin-section" class="hidden fade-in">
+        <div id="forgot-pin-section" class="hidden fade-in max-w-md mx-auto">
             <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
                 <!-- Icon -->
                 <div class="text-center mb-6">
@@ -354,7 +354,7 @@
                             <p class="text-3xl font-bold" id="loyalty-points">0</p>
                         </div>
                     </div>
-                    <button onclick="openLoyaltyModal()" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition text-sm font-bold">
+                    <button onclick="openRewardModal()" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition text-sm font-bold">
                         Lihat Rewards
                     </button>
                 </div>
@@ -403,8 +403,13 @@
                 </div>
 
                 <!-- Order List -->
-                <div id="order-list" class="space-y-4">
+                <div id="order-list" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Orders will be dynamically inserted here -->
+                </div>
+                
+                <!-- Pagination -->
+                <div id="order-pagination" class="hidden">
+                    <!-- Pagination will be dynamically inserted here -->
                 </div>
             </div>
         </div>
@@ -564,7 +569,7 @@
         </div>
     </div>
 
-    <!-- Loyalty Rewards Modal -->
+    <!-- Reward modal will be loaded from homepage script -->
     <div id="loyalty-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6">
@@ -668,6 +673,7 @@
 
     <!-- Scripts -->
     <script src="assets/js/config.js"></script>
+    <script src="assets/js/script.js"></script>
     <script src="assets/js/akun.js"></script>
 </body>
 </html>
