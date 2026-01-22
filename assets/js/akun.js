@@ -3,6 +3,33 @@
  * Handles user authentication and order history
  */
 
+// Phone utilities
+const normalizePhoneTo08 = (phone) => {
+    const digits = (phone || '').toString().replace(/[^0-9]/g, '');
+    if (!digits) return '';
+    let core = digits;
+    if (core.startsWith('62')) core = core.slice(2);
+    if (core.startsWith('0')) core = core.slice(1);
+    if (!core.startsWith('8')) return '';
+    return '0' + core;
+};
+
+const phoneLookupVariants = (phone) => {
+    const base = normalizePhoneTo08(phone);
+    if (!base) return [];
+    const core = base.slice(1);
+    return [base, `+62${core}`, `62${core}`, core];
+};
+
+const displayPhone = (phone) => normalizePhoneTo08(phone) || (phone || '');
+
+const parseSheetResponse = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.result)) return data.result;
+    if (data && data.result) return Array.isArray(data.result) ? data.result : [data.result];
+    return [];
+};
+
 // Check if user is already logged in
 document.addEventListener('DOMContentLoaded', () => {
     const loggedInUser = getLoggedInUser();
@@ -37,7 +64,7 @@ function showDashboard(user) {
     
     // Display user info
     document.getElementById('user-name').textContent = user.nama;
-    document.getElementById('user-whatsapp').textContent = `+62 ${user.whatsapp}`;
+    document.getElementById('user-whatsapp').textContent = displayPhone(user.whatsapp);
     
     // Load loyalty points from user_points sheet
     loadLoyaltyPoints(user);
@@ -64,6 +91,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         return;
     }
     
+    const normalizedPhone = normalizePhoneTo08(whatsapp);
+    if (!normalizedPhone) {
+        showError('Gunakan format 08xxxxxxxxxx');
+        return;
+    }
+    if (normalizedPhone.length < 10 || normalizedPhone.length > 13) {
+        showError('Panjang nomor tidak valid');
+        return;
+    }
+    
     if (pin.length !== 6) {
         showError('PIN harus 6 digit');
         return;
@@ -81,42 +118,50 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     errorDiv.classList.add('hidden');
     
     try {
-        // Fetch user from API
         const apiUrl = CONFIG.getMainApiUrl();
-        const response = await fetch(`${apiUrl}?sheet=users&whatsapp=${whatsapp}`);
+        const cacheBuster = '&_t=' + Date.now();
+        const variants = phoneLookupVariants(normalizedPhone);
+        let foundUser = null;
         
-        if (!response.ok) {
-            throw new Error('Gagal terhubung ke server');
+        for (const phone of variants) {
+            const resp = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(phone)}${cacheBuster}`);
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            const users = parseSheetResponse(data);
+            if (users && users.length > 0) {
+                const candidate = users.find(u => normalizePhoneTo08(u.whatsapp || u.phone || '') === normalizePhoneTo08(phone));
+                if (candidate) {
+                    foundUser = candidate;
+                    break;
+                }
+            }
         }
         
-        const users = await response.json();
-        
-        // Check if user exists
-        if (!users || users.length === 0) {
+        if (!foundUser) {
             showError('Nomor WhatsApp tidak terdaftar');
             resetLoginButton();
             return;
         }
         
-        const user = users[0];
-        
         // Validate PIN
-        if (user.pin !== pin) {
+        if ((foundUser.pin || '').toString() !== pin) {
             showError('PIN salah. Silakan coba lagi.');
             resetLoginButton();
             return;
         }
         
         // Check if account is active
-        if (user.status && user.status.toLowerCase() !== 'aktif') {
+        if (foundUser.status && foundUser.status.toLowerCase() !== 'aktif') {
             showError('Akun Anda tidak aktif. Hubungi admin.');
             resetLoginButton();
             return;
         }
         
         // Login successful
-        saveLoggedInUser(user);
-        showDashboard(user);
+        foundUser.whatsapp = normalizePhoneTo08(foundUser.whatsapp || foundUser.phone || normalizedPhone);
+        saveLoggedInUser(foundUser);
+        showDashboard(foundUser);
+        document.getElementById('dashboard-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
         
     } catch (error) {
         console.error('Login error:', error);
@@ -154,10 +199,11 @@ function resetLoginButton() {
  * Save logged in user to localStorage
  */
 function saveLoggedInUser(user) {
+    const normalizedPhone = normalizePhoneTo08(user.whatsapp || user.phone || '');
     localStorage.setItem('gosembako_user', JSON.stringify({
         id: user.id,
         nama: user.nama,
-        whatsapp: user.whatsapp,
+        whatsapp: normalizedPhone || user.whatsapp,
         tanggal_daftar: user.tanggal_daftar,
         referral_code: user.referral_code || user.whatsapp // fallback to phone if no referral_code
     }));
@@ -168,7 +214,10 @@ function saveLoggedInUser(user) {
  */
 function getLoggedInUser() {
     const userJson = localStorage.getItem('gosembako_user');
-    return userJson ? JSON.parse(userJson) : null;
+    if (!userJson) return null;
+    const user = JSON.parse(userJson);
+    user.whatsapp = normalizePhoneTo08(user.whatsapp || user.phone || '') || user.whatsapp;
+    return user;
 }
 
 /**
@@ -639,8 +688,14 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     }
     
     // Validate WhatsApp
-    const cleanPhone = whatsapp.replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 10) {
+    const normalizedPhone = normalizePhoneTo08(whatsapp);
+    if (!normalizedPhone) {
+        errorText.textContent = 'Gunakan format 08xxxxxxxxxx';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+    const cleanPhone = normalizedPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10 || cleanPhone.length > 13) {
         errorText.textContent = 'Nomor WhatsApp tidak valid';
         errorDiv.classList.remove('hidden');
         return;
@@ -682,50 +737,25 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         
-        // ✅ FIX: Check if WhatsApp already registered with multiple format checks
-        // Normalize and try different phone formats (with/without spaces, with/without +62)
-        const normalizePhone = (phone) => phone.replace(/[\s\-().]/g, '');
-        const normalizedInput = normalizePhone(whatsapp);
-        
-        // Generate all possible phone formats to check
-        const phonesToCheck = [
-            whatsapp,  // Original format
-            normalizedInput,  // No spaces
-            normalizedInput.replace(/^62/, '+62'),  // Add +62 if removed
-            '+' + normalizedInput,  // Add + if missing
-        ];
-        
+        // Check if WhatsApp already registered (try multiple formats)
+        const phonesToCheck = phoneLookupVariants(normalizedPhone);
         let existingUsers = [];
         const cacheBuster = '&_t=' + Date.now();
         
         console.log('🔍 Checking phone formats:', phonesToCheck);
         
-        // Try to find user with any of the phone formats
         for (const phoneToCheck of phonesToCheck) {
             try {
                 const checkResponse = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(phoneToCheck)}${cacheBuster}`);
-                
                 if (!checkResponse.ok) {
                     console.warn(`API error for ${phoneToCheck}: ${checkResponse.status}`);
                     continue;
                 }
-                
                 const data = await checkResponse.json();
-                
-                // ✅ FIX: Handle different SheetDB response formats
-                if (data && typeof data === 'object') {
-                    if (Array.isArray(data)) {
-                        existingUsers = data;
-                    } else if (Array.isArray(data.result)) {
-                        existingUsers = data.result;
-                    } else if (data.result && data.result.length > 0) {
-                        existingUsers = Array.isArray(data.result) ? data.result : [data.result];
-                    }
-                }
-                
+                existingUsers = parseSheetResponse(data);
                 if (existingUsers && existingUsers.length > 0) {
                     console.log(`📊 Found existing user with format [${phoneToCheck}]:`, existingUsers);
-                    break;  // Found user, stop checking other formats
+                    break;
                 }
             } catch (err) {
                 console.warn(`Check failed for ${phoneToCheck}:`, err.message);
@@ -765,16 +795,6 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         const urlParams = new URLSearchParams(window.location.search);
         const referrerCode = urlParams.get('ref') || sessionStorage.getItem('referral_code');
         
-        // ✅ Normalize phone number before saving (remove spaces, add +62 if needed)
-        const normalizePhone = (phone) => {
-            let normalized = phone.replace(/[\s\-().]/g, '');
-            if (!normalized.startsWith('+')) {
-                normalized = '+' + normalized;
-            }
-            return normalized;
-        };
-        const normalizedWhatsapp = normalizePhone(whatsapp);
-        
         // Create new user
         const createResponse = await fetch(`${apiUrl}?sheet=users`, {
             method: 'POST',
@@ -782,7 +802,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             body: JSON.stringify({
                 id: userId,
                 nama: name,
-                whatsapp: normalizedWhatsapp,
+                whatsapp: normalizedPhone,
                 pin: pin,
                 tanggal_daftar: today,
                 status: 'aktif',
@@ -829,6 +849,12 @@ document.getElementById('forgot-pin-form').addEventListener('submit', async (e) 
     const errorText = document.getElementById('forgot-error-text');
     const forgotBtn = document.getElementById('forgot-btn');
     
+    const normalizedPhone = normalizePhoneTo08(whatsapp);
+    if (!normalizedPhone) {
+        errorDiv.classList.remove('hidden');
+        errorText.textContent = 'Gunakan format 08xxxxxxxxxx';
+        return;
+    }
     errorDiv.classList.add('hidden');
     
     // Show loading
@@ -837,8 +863,8 @@ document.getElementById('forgot-pin-form').addEventListener('submit', async (e) 
     
     try {
         const apiUrl = CONFIG.getMainApiUrl();
-        const response = await fetch(`${apiUrl}?sheet=users&whatsapp=${whatsapp}`);
-        const users = await response.json();
+        const response = await fetch(`${apiUrl}?sheet=users&whatsapp=${normalizedPhone}`);
+        const users = parseSheetResponse(await response.json());
         
         if (!users || users.length === 0) {
             errorText.textContent = 'Nomor WhatsApp tidak terdaftar';
@@ -849,10 +875,11 @@ document.getElementById('forgot-pin-form').addEventListener('submit', async (e) 
         }
         
         // Simulate sending verification code
-        alert(`Kode verifikasi telah dikirim ke WhatsApp +62${whatsapp}.\n\nUntuk sementara, hubungi admin untuk reset PIN.`);
+        alert(`Kode verifikasi telah dikirim ke WhatsApp ${normalizedPhone}.\n\nUntuk sementara, hubungi admin untuk reset PIN.`);
         
         // Redirect to WhatsApp admin
-        window.open(`https://wa.me/628993370200?text=Halo, saya ingin reset PIN akun saya. Nomor WhatsApp: ${whatsapp}`, '_blank');
+        const waLinkPhone = normalizedPhone.replace(/^0/, '62');
+        window.open(`https://wa.me/628993370200?text=Halo, saya ingin reset PIN akun saya. Nomor WhatsApp: ${waLinkPhone}`, '_blank');
         
         // Back to login
         setTimeout(() => {
