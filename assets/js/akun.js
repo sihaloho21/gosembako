@@ -482,15 +482,14 @@ function normalizeStatus(status) {
 
 /**
  * Format date to Indonesian format
- * Handles various date formats from Google Sheets
+ * Handles Google Sheets format: 21/1/2026, 09.26.20
+ * Returns only date without time: 21 Januari 2026
  */
 function formatDate(dateString) {
     if (!dateString || dateString === 'N/A' || dateString === '') {
-        console.log('[formatDate] Empty or invalid dateString:', dateString);
         return 'N/A';
     }
     
-    // Try to parse the date
     let date;
     
     // Handle various date formats
@@ -498,27 +497,24 @@ function formatDate(dateString) {
         // Unix timestamp (milliseconds)
         date = new Date(dateString);
     } else if (typeof dateString === 'string') {
-        // Try ISO format first (2026-01-22T14:30:00)
+        // Remove time part if exists (after comma)
+        // Format: "21/1/2026, 09.26.20" → "21/1/2026"
+        let dateOnly = dateString.split(',')[0].trim();
+        
+        // Try ISO format first (2026-01-22 or 2026-01-22T14:30:00)
         date = new Date(dateString);
         
         // If invalid, try DD/MM/YYYY format
-        if (isNaN(date.getTime()) && dateString.includes('/')) {
-            const parts = dateString.split(/[\/ :]/);
-            if (parts.length >= 3) {
-                // Assume DD/MM/YYYY or MM/DD/YYYY
+        if (isNaN(date.getTime()) && dateOnly.includes('/')) {
+            const parts = dateOnly.split('/');
+            if (parts.length === 3) {
                 const day = parseInt(parts[0]);
                 const month = parseInt(parts[1]);
                 const year = parseInt(parts[2]);
                 
-                // Try DD/MM/YYYY first (Indonesian format)
-                if (day <= 31 && month <= 12) {
+                // Create date (month is 0-indexed in JS)
+                if (day <= 31 && month <= 12 && year > 1900) {
                     date = new Date(year, month - 1, day);
-                    
-                    // Add time if available
-                    if (parts.length >= 5) {
-                        date.setHours(parseInt(parts[3]) || 0);
-                        date.setMinutes(parseInt(parts[4]) || 0);
-                    }
                 }
             }
         }
@@ -528,22 +524,17 @@ function formatDate(dateString) {
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
-        console.log('[formatDate] Invalid date after parsing:', dateString, '→', date);
         return 'N/A';
     }
     
-    // Format to Indonesian
+    // Format to Indonesian (date only, no time)
     const options = { 
         year: 'numeric', 
         month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: 'numeric'
     };
     
-    const formatted = date.toLocaleDateString('id-ID', options);
-    console.log('[formatDate] Success:', dateString, '→', formatted);
-    return formatted;
+    return date.toLocaleDateString('id-ID', options);
 }
 
 /**
@@ -1031,18 +1022,11 @@ function getStatusClass(status) {
  * Show order detail modal with animated timeline
  */
 function showOrderDetailModal(order) {
-    // Debug: Log order data
-    console.log('[showOrderDetailModal] Order data:', order);
-    console.log('[showOrderDetailModal] tanggal:', order.tanggal);
-    console.log('[showOrderDetailModal] tanggal_pesanan:', order.tanggal_pesanan);
-    console.log('[showOrderDetailModal] timestamp:', order.timestamp);
-    
     // Update order info
     document.getElementById('tracking-order-id').textContent = order.id || 'N/A';
     
-    // Try to get date from various fields
+    // Get date from sheet (priority: tanggal column)
     const dateValue = order.tanggal || order.tanggal_pesanan || order.timestamp || order.date || order.created_at;
-    console.log('[showOrderDetailModal] dateValue to format:', dateValue);
     document.getElementById('tracking-order-date').textContent = formatDate(dateValue);
     
     // Update status badge (normalize first)
