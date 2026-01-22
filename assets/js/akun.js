@@ -388,8 +388,7 @@ function createOrderCard(order) {
     card.innerHTML = `
         <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
-                <p class="text-xs text-gray-500 mb-1">${status}</p>
-                <p class="text-xs font-bold text-gray-800">Order ID: <span class="text-green-600">${orderId}</span></p>
+                <p class="text-[10px] font-bold text-gray-700 mb-1">Order ID: <span class="text-green-600">${orderId}</span></p>
             </div>
             ${statusBadge}
         </div>
@@ -960,18 +959,19 @@ function getStatusClass(status) {
 function showOrderDetailModal(order) {
     // Update order info
     document.getElementById('tracking-order-id').textContent = order.id || 'N/A';
-    document.getElementById('tracking-order-date').textContent = formatDate(order.tanggal_pesanan || order.timestamp);
+    document.getElementById('tracking-order-date').textContent = formatDate(order.tanggal || order.tanggal_pesanan || order.timestamp);
     
     // Update status badge
     const status = order.status || 'Menunggu';
     const statusBadge = getStatusBadge(status);
-    document.getElementById('tracking-status-badge').outerHTML = statusBadge;
+    const statusBadgeElement = document.getElementById('tracking-status-badge');
+    if (statusBadgeElement) {
+        statusBadgeElement.outerHTML = statusBadge;
+    }
     
     // Update order details
     document.getElementById('tracking-products').textContent = order.produk || order.items || order.product_name || 'N/A';
     document.getElementById('tracking-total').textContent = formatCurrency(order.total_bayar || order.total || 0);
-    document.getElementById('tracking-payment').textContent = order.metode_pembayaran || order.payment_method || 'N/A';
-    document.getElementById('tracking-shipping').textContent = order.metode_pengiriman || order.shipping_method || 'N/A';
     
     // Create animated timeline
     const timeline = createAnimatedTimeline(status);
@@ -982,7 +982,7 @@ function showOrderDetailModal(order) {
 }
 
 /**
- * Create animated status timeline
+ * Create animated status timeline (horizontal layout)
  */
 function createAnimatedTimeline(currentStatus) {
     const statuses = [
@@ -998,15 +998,13 @@ function createAnimatedTimeline(currentStatus) {
     // Handle Dibatalkan status separately
     if (currentStatus === 'Dibatalkan') {
         return `
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="bg-red-500 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </div>
+            <div class="flex items-center justify-center gap-3 py-4">
+                <div class="bg-red-500 w-12 h-12 rounded-full flex items-center justify-center animate-pulse">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
                 </div>
-                <div class="flex-1">
+                <div>
                     <p class="font-bold text-red-600">Dibatalkan</p>
                     <p class="text-xs text-gray-500">Pesanan telah dibatalkan</p>
                 </div>
@@ -1017,28 +1015,31 @@ function createAnimatedTimeline(currentStatus) {
     // If status not found, default to first status
     if (currentIndex === -1) currentIndex = 0;
     
-    return statuses.map((s, index) => {
-        const isActive = index <= currentIndex;
-        const isCurrent = index === currentIndex;
-        const isLast = index === statuses.length - 1;
-        
-        return `
-            <div class="flex gap-4">
-                <div class="flex flex-col items-center">
-                    <div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isCurrent ? 'animate-pulse' : ''}">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.icon}"></path>
-                        </svg>
+    // Create horizontal timeline
+    return `
+        <div class="flex items-center justify-between gap-2 py-2">
+            ${statuses.map((s, index) => {
+                const isActive = index <= currentIndex;
+                const isCurrent = index === currentIndex;
+                const isLast = index === statuses.length - 1;
+                
+                return `
+                    <div class="flex flex-col items-center flex-1">
+                        <div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-10 h-10 rounded-full flex items-center justify-center ${isCurrent ? 'animate-pulse' : ''}">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.icon}"></path>
+                            </svg>
+                        </div>
+                        <p class="text-[10px] font-semibold mt-2 text-center ${isActive ? 'text-gray-800' : 'text-gray-400'}">${s.name}</p>
+                        ${isCurrent ? '<p class="text-[8px] text-green-600 font-bold mt-0.5">● Saat ini</p>' : '<p class="text-[8px] text-transparent mt-0.5">●</p>'}
                     </div>
-                    ${!isLast ? `<div class="${isActive ? 'bg-green-500' : 'bg-gray-300'} w-0.5 h-12 transition-all duration-500"></div>` : ''}
-                </div>
-                <div class="flex-1 ${!isLast ? 'pb-4' : ''}">
-                    <p class="font-bold ${isActive ? 'text-gray-800' : 'text-gray-400'}">${s.name}</p>
-                    <p class="text-xs ${isCurrent ? 'text-green-600 font-semibold' : 'text-gray-500'}">${isCurrent ? '← Status saat ini' : ''}</p>
-                </div>
-            </div>
-        `;
-    }).join('');
+                    ${!isLast ? `
+                        <div class="flex-shrink-0 w-8 h-0.5 ${isActive && index < currentIndex ? 'bg-green-500' : 'bg-gray-300'} transition-all duration-500 mb-6"></div>
+                    ` : ''}
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
 /**
