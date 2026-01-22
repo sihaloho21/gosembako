@@ -1209,18 +1209,34 @@ function sendToWA() {
     
     // Validation 1: Check if name is filled
     if (!name || name.trim().length === 0) {
-        alert('Nama belum diisi');
+        alert('Masukkan Nama Lengkap');
         return;
     }
     
     // Validation 2: Name must be at least 4 characters (excluding spaces)
     const nameWithoutSpaces = name.replace(/\s/g, '');
     if (nameWithoutSpaces.length < 4) {
-        alert('Nama belum diisi');
+        alert('Masukkan Nama Lengkap');
         return;
     }
     
-    // Validation 3: Phone number validation
+    // Validation 3: Check for invalid name patterns (repeated characters)
+    const nameLower = nameWithoutSpaces.toLowerCase();
+    const invalidNamePatterns = [
+        /^(.)\1{3,}$/,              // Same character repeated 4+ times (aaaa, bbbb)
+        /^(.{2})\1{2,}$/,           // Pairs repeated 3+ times (asasas, adadad)
+        /^(.{3})\1{2,}$/,           // Triplets repeated 3+ times (abcabcabc)
+        /^([a-z])([a-z])\1\2{2,}$/, // Alternating pairs (ababab, cdcdcd)
+    ];
+    
+    for (const pattern of invalidNamePatterns) {
+        if (pattern.test(nameLower)) {
+            alert('Masukkan Nama Lengkap');
+            return;
+        }
+    }
+    
+    // Validation 4: Phone number validation
     if (!phone || phone.trim().length === 0) {
         alert('Nomor WhatsApp tidak valid');
         return;
@@ -1249,15 +1265,15 @@ function sendToWA() {
         }
     }
     
-    // Validation 4: Payment method must be selected
+    // Validation 5: Payment method must be selected
     if (!payMethod) {
         alert('Pilih metode pembayaran terlebih dahulu');
         return;
     }
     
-    // Validation 5: Shipping method must be selected
+    // Validation 6: Shipping method must be selected
     if (!shipMethod) {
-        alert('Mohon lengkapi semua data pesanan.');
+        alert('Pilih metode pengiriman terlebih dahulu');
         return;
     }
     
