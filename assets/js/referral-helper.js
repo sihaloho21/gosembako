@@ -7,7 +7,127 @@
  * - Get referral link
  * - Track referral from URL
  * - Get referrer info
+ * - Integration dengan Google Apps Script backend
  */
+
+// ============================================================================
+// GOOGLE APPS SCRIPT INTEGRATION
+// ============================================================================
+
+/**
+ * Call Google Apps Script backend untuk process referral
+ * @param {string} action - Action name (processReferral, getReferralStats, etc)
+ * @param {object} data - Data untuk dikirim ke GAS
+ * @returns {Promise<object>} Response dari GAS
+ */
+async function callGASAPI(action, data) {
+    try {
+        const gasUrl = CONFIG.getGASUrl();
+        
+        if (!gasUrl) {
+            console.error('❌ GAS URL tidak dikonfigurasi di CONFIG');
+            return {
+                success: false,
+                message: 'GAS URL not configured',
+                action: action
+            };
+        }
+        
+        console.log(`📤 Calling GAS API: ${action}`, data);
+        
+        const payload = JSON.stringify({
+            action: action,
+            ...data
+        });
+        
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            payload: payload,
+            muteHttpExceptions: false
+        });
+        
+        if (!response.ok) {
+            console.error(`❌ GAS HTTP Error: ${response.status}`);
+            return {
+                success: false,
+                message: `HTTP ${response.status}`,
+                action: action
+            };
+        }
+        
+        const result = await response.json();
+        console.log(`✅ GAS Response (${action}):`, result);
+        
+        return result;
+        
+    } catch (error) {
+        console.error(`❌ GAS API Error (${action}):`, error);
+        return {
+            success: false,
+            message: error.toString(),
+            action: action
+        };
+    }
+}
+
+/**
+ * Process order referral di backend GAS
+ * Dipanggil setelah order berhasil dibuat
+ */
+async function processOrderReferralViaGAS(orderId, phone, name) {
+    console.log(`🔗 Processing referral via GAS for order: ${orderId}`);
+    
+    const result = await callGASAPI('processReferral', {
+        orderId: orderId,
+        phone: phone,
+        name: name
+    });
+    
+    if (result.success && result.referralProcessed) {
+        console.log('✅ Referral berhasil di-process!');
+        console.log(`   • Referrer: ${result.referrer_name}`);
+        console.log(`   • Reward: ${result.referrer_reward} poin`);
+        console.log(`   • Voucher: ${result.voucher_code}`);
+        
+        // Show notification
+        showToastNotification(
+            `🎉 Referral processed! ${result.referrer_name} dapat ${result.referrer_reward} poin`,
+            4000
+        );
+    }
+    
+    return result;
+}
+
+/**
+ * Get referral stats dari GAS
+ */
+async function getReferralStatsFromGAS(referralCode) {
+    console.log(`📊 Getting referral stats from GAS: ${referralCode}`);
+    
+    const result = await callGASAPI('getReferralStats', {
+        referralCode: referralCode
+    });
+    
+    return result;
+}
+
+/**
+ * Get points history dari GAS
+ */
+async function getPointsHistoryFromGAS(referralCode) {
+    console.log(`📝 Getting points history from GAS: ${referralCode}`);
+    
+    const result = await callGASAPI('getUserPointsHistory', {
+        referralCode: referralCode
+    });
+    
+    return result;
+}
+
+// ============================================================================
+// REFERRAL CODE & LINK MANAGEMENT
+// ============================================================================
 
 /**
  * Generate referral code dari nama user
