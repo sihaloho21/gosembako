@@ -144,6 +144,13 @@ const CONFIG = {
     setMainApiUrl(url) {
         if (url && url.trim()) {
             localStorage.setItem(this.STORAGE_KEYS.MAIN_API, url.trim());
+            // ✅ Clear cache saat API berubah
+            if (typeof ApiService !== 'undefined') {
+                ApiService.clearCache();
+                console.log('✅ API cache cleared after URL change');
+            }
+            // ✅ Clear sessionStorage runtime cache
+            sessionStorage.removeItem('runtime_main_api_url');
             return true;
         }
         return false;
@@ -156,6 +163,13 @@ const CONFIG = {
     setAdminApiUrl(url) {
         if (url && url.trim()) {
             localStorage.setItem(this.STORAGE_KEYS.ADMIN_API, url.trim());
+            // ✅ Clear cache saat API berubah
+            if (typeof ApiService !== 'undefined') {
+                ApiService.clearCache();
+                console.log('✅ API cache cleared after URL change');
+            }
+            // ✅ Clear sessionStorage runtime cache
+            sessionStorage.removeItem('runtime_admin_api_url');
             return true;
         }
         return false;
@@ -171,6 +185,14 @@ const CONFIG = {
         } else if (type === 'admin') {
             localStorage.removeItem(this.STORAGE_KEYS.ADMIN_API);
         }
+        // ✅ Clear cache saat reset
+        if (typeof ApiService !== 'undefined') {
+            ApiService.clearCache();
+            console.log('✅ API cache cleared after reset to default');
+        }
+        // ✅ Clear sessionStorage runtime cache
+        sessionStorage.removeItem('runtime_main_api_url');
+        sessionStorage.removeItem('runtime_admin_api_url');
     },
     
     /**

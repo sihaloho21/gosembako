@@ -19,6 +19,28 @@ const ApiService = {
     INITIAL_RETRY_DELAY: 1000, // 1 second
     
     /**
+     * Clear all cached data
+     * Call this when API URL changes
+     */
+    clearCache() {
+        this.cache.clear();
+        this.pendingRequests.clear();
+        console.log('🧹 [ApiService] Cache cleared successfully');
+    },
+    
+    /**
+     * Clear cache for specific endpoint
+     * @param {string} endpoint - Endpoint to clear (e.g., '?sheet=products')
+     */
+    clearCacheForEndpoint(endpoint) {
+        const baseUrl = CONFIG.getMainApiUrl();
+        const url = `${baseUrl}${endpoint}`;
+        const cacheKey = this._generateCacheKey(url, {});
+        this.cache.delete(cacheKey);
+        console.log('🧹 [ApiService] Cache cleared for endpoint:', endpoint);
+    },
+    
+    /**
      * Main fetch method with caching and retry logic
      * @param {string} endpoint - API endpoint (e.g., '?sheet=products')
      * @param {object} options - Fetch options

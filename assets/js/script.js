@@ -12,13 +12,25 @@ function getApiUrl() {
 let API_URL = getApiUrl();
 
 /**
- * Refresh API_URL from localStorage
+ * Refresh API_URL from localStorage and reload data
  * Call this after admin saves new API settings
  */
 function refreshApiUrl() {
+    const oldApiUrl = API_URL;
     API_URL = getApiUrl();
-    console.log('API URL refreshed:', API_URL);
-    // Reload products with new API
+    console.log('Old API URL:', oldApiUrl);
+    console.log('New API URL:', API_URL);
+    
+    if (oldApiUrl !== API_URL) {
+        console.log('🔄 API URL changed, clearing cache and reloading...');
+        // Cache sudah di-clear oleh CONFIG.setMainApiUrl()
+        // Tapi kita clear lagi untuk memastikan
+        if (typeof ApiService !== 'undefined') {
+            ApiService.clearCache();
+        }
+    }
+    
+    // Reload products dengan API URL baru
     fetchProducts();
 }
 
