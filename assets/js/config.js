@@ -290,7 +290,8 @@ const CONFIG = {
         const stored = localStorage.getItem('sembako_gas_url');
         if (stored) return stored;
         
-        return ''; // Default kosong (belum dikonfigurasi)
+        // Default GAS URL (deployed from GoSembako referral system)
+        return 'https://script.google.com/macros/s/AKfycbwljO0pb8x2kggfnJ7rW1YulD-a5VUu2K7nLNepXctLS0hfDV_90kEabkyQfkXA_qYd-Q/exec';
     },
     
     /**
