@@ -7,8 +7,8 @@
 const CONFIG = {
     // Default API URLs (Fallback)
     DEFAULTS: {
-        MAIN_API: 'https://sheetdb.io/api/v1/epcjnpzmllvkb',
-        ADMIN_API: 'https://sheetdb.io/api/v1/epcjnpzmllvkb',
+        MAIN_API: 'https://sheetdb.io/api/v1/2nu6gqeb0w4ku',
+        ADMIN_API: 'https://sheetdb.io/api/v1/2nu6gqeb0w4ku',
         VERSION: '1.0.0'
     },
     
