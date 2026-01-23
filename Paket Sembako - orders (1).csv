@@ -1,0 +1,4 @@
+id,pelanggan,phone,produk,qty,total,poin,status,point_processed,tanggal
+ORD-035668,RIDO ALPREDO SIHALOHO,8993370200,Beras Slyp Super Cap Ketupat (BERAS 1 KARUNG) (x1),1,405200,"40,00",Terima,Yes,"21/1/2026, 09.26.20"
+ORD-366563,RIDO,89933111111111,Beras Slyp Super Cap Ketupat (BERAS 1 KARUNG) (x1),1,405200,"40,00",Diproses,Yes,"21/1/2026, 09.32.14"
+ORD-472154,RIDO ALPREDO SIHALOHO,8993370200,Indomie Kari Ayam (x1),1,5920,"0,00",Dikirim,Yes,"21/1/2026, 09.37.33"
