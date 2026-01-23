@@ -4,6 +4,7 @@
  * Changelog:
  * - VALIDASI PEMBELIAN PERTAMA DIHILANGKAN UNTUK TESTING.
  * - Setiap order dari referred user akan memberikan poin ke referrer.
+ * - AUTO-CREATE REFERRER: Jika referrer belum ada, akan otomatis dibuat.
  */
 
 // ============================================================================
@@ -58,7 +59,7 @@ function doPost(e) {
 }
 
 // ============================================================================
-// REFERRAL PROCESSING LOGIC (VALIDASI DIHILANGKAN)
+// REFERRAL PROCESSING LOGIC (AUTO-CREATE REFERRER + VALIDASI DIHILANGKAN)
 // ============================================================================
 function processReferral(orderId, customerPhone, customerName, referralCode) {
   try {
@@ -90,9 +91,34 @@ function processReferral(orderId, customerPhone, customerName, referralCode) {
     */
     // ===================================================================
 
-    const referrer = findUserByReferralCode(buyer.referrer_id);
+    let referrer = findUserByReferralCode(buyer.referrer_id);
+    
+    // ===================================================================
+    // AUTO-CREATE REFERRER: Jika referrer tidak ditemukan, buat otomatis
+    // ===================================================================
     if (!referrer) {
-      return { success: false, message: 'Referrer tidak ditemukan.', referralProcessed: false };
+      Logger.log('⚠️ Referrer tidak ditemukan. Auto-creating referrer: ' + buyer.referrer_id);
+      
+      // Buat referrer baru
+      const newReferrer = {
+        id: 'USER-' + Date.now(),
+        whatsapp: '0000000000', // Placeholder
+        nama: 'Referrer ' + buyer.referrer_id,
+        referral_code: buyer.referrer_id,
+        total_points: 0,
+        created_at: getNowTimestamp(),
+        updated_at: getNowTimestamp()
+      };
+      
+      addRowToSheet(SHEETS.USERS, newReferrer);
+      Logger.log('✅ Referrer berhasil dibuat: ' + buyer.referrer_id);
+      
+      // Ambil referrer yang baru dibuat
+      referrer = findUserByReferralCode(buyer.referrer_id);
+      
+      if (!referrer) {
+        return { success: false, message: 'Gagal membuat referrer baru.', referralProcessed: false };
+      }
     }
 
     // Proses pemberian reward
