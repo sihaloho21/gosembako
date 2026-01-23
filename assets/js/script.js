@@ -1422,9 +1422,8 @@ function sendToWA() {
             // Add small delay to ensure order is fully saved to SheetDB
             if (typeof processOrderReferralViaGAS === 'function') {
                 setTimeout(() => {
-                    const orderId = 'ORD-' + Date.now();
                     processOrderReferralViaGAS(
-                        orderId,
+                        orderId,  // Use the actual order ID, not a new one
                         normalizePhone(phone),
                         name
                     ).then(result => {

@@ -108,10 +108,23 @@ function findUserByReferralCode(code) {
 }
 
 /**
- * Normalize phone number (remove all non-digits)
+ * Normalize phone number to standard format 08xxxxxx
+ * Handles: 08xxxxxx, 8xxxxxx, 628xxxxxx, +628xxxxxx
  */
 function normalizePhone(phone) {
-  return String(phone).replace(/[^0-9]/g, '');
+  let cleaned = String(phone).replace(/[^0-9]/g, '');
+  
+  // Handle country code 62
+  if (cleaned.startsWith('62')) {
+    cleaned = '0' + cleaned.substring(2);
+  }
+  
+  // Handle format 8xxxxxx (add leading 0)
+  if (cleaned.startsWith('8') && !cleaned.startsWith('08')) {
+    cleaned = '0' + cleaned;
+  }
+  
+  return cleaned;
 }
 
 /**
