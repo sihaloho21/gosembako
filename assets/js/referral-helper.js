@@ -76,10 +76,14 @@ async function callGASAPI(action, data) {
 async function processOrderReferralViaGAS(orderId, phone, name) {
     console.log(`🔗 Processing referral via GAS for order: ${orderId}`);
     
+    // Get referral code from localStorage (saved from URL parameter)
+    const referralCode = getReferralCode();
+    
     const result = await callGASAPI('processReferral', {
         orderId: orderId,
         phone: phone,
-        name: name
+        name: name,
+        referralCode: referralCode  // Send referral code for auto-register
     });
     
     if (result.success && result.referralProcessed) {
@@ -93,6 +97,10 @@ async function processOrderReferralViaGAS(orderId, phone, name) {
             `🎉 Referral processed! ${result.referrer_name} dapat ${result.referrer_reward} poin`,
             4000
         );
+    } else if (result.success && !result.referralProcessed) {
+        console.log('ℹ️ ' + result.message);
+    } else {
+        console.log('❌ Referral processing failed: ' + result.message);
     }
     
     return result;

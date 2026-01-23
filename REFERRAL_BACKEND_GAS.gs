@@ -219,23 +219,72 @@ function getNowTimestamp() {
  * Main function: Process order dan credit referrer jika applicable
  * 
  * Logic:
- * 1. Cek user ada di referrals sheet (referred_id)
+ * 1. Auto-register user jika belum ada (dengan referral code dari link)
  * 2. Cek apakah ini first order user (hanya 1 order di orders sheet)
  * 3. Jika first order, credit referrer dengan poin
  * 4. Mark referral sebagai completed
  * 5. Generate voucher untuk referred user
+ * 
+ * @param {string} orderId - Order ID
+ * @param {string} customerPhone - Phone number customer
+ * @param {string} customerName - Nama customer
+ * @param {string} referralCode - Referral code dari link (optional)
  */
-function processReferral(orderId, customerPhone, customerName) {
+function processReferral(orderId, customerPhone, customerName, referralCode) {
   try {
     Logger.log('🔄 Processing referral for order: ' + orderId);
+    Logger.log('   Customer: ' + customerName + ' (' + customerPhone + ')');
+    Logger.log('   Referral code from link: ' + (referralCode || 'none'));
     
     // Step 1: Cari user yang baru beli
-    const buyer = findUserByWhatsapp(customerPhone);
+    let buyer = findUserByWhatsapp(customerPhone);
+    
+    // AUTO-REGISTER: Jika user belum ada DAN ada referral code, buat user baru
+    if (!buyer && referralCode) {
+      Logger.log('🆕 User belum terdaftar, auto-registering dengan referral code: ' + referralCode);
+      
+      // Verify referral code valid
+      const referrer = findUserByReferralCode(referralCode);
+      if (!referrer) {
+        Logger.log('❌ Referral code invalid: ' + referralCode);
+        return {
+          success: false,
+          message: 'Kode referral tidak valid',
+          referralProcessed: false
+        };
+      }
+      
+      // Create new user with referral
+      const newUserId = 'USR-' + Math.floor(Math.random() * 900000 + 100000);
+      const newReferralCode = customerName.substring(0, 4).toUpperCase() + Math.floor(Math.random() * 9000 + 1000);
+      
+      const newUser = {
+        id: newUserId,
+        nama: customerName,
+        whatsapp: normalizePhone(customerPhone),
+        pin: '000000', // Default PIN, user bisa ganti nanti
+        referral_code: newReferralCode,
+        referrer_id: referralCode,
+        total_points: 0,
+        status: 'aktif',
+        created_at: getNowTimestamp(),
+        tanggal_daftar: new Date().toISOString().split('T')[0]
+      };
+      
+      // Add to users sheet
+      addRowToSheet(SHEETS.USERS, newUser);
+      Logger.log('✅ User auto-registered: ' + newUserId + ' (referrer: ' + referralCode + ')');
+      
+      // Re-fetch the buyer
+      buyer = newUser;
+    }
+    
+    // If still no buyer (no referral code provided), return error
     if (!buyer) {
-      Logger.log('❌ Buyer not found in users sheet');
+      Logger.log('❌ Buyer not found in users sheet and no referral code provided');
       return {
         success: false,
-        message: 'User tidak ditemukan',
+        message: 'User tidak ditemukan. Silakan register terlebih dahulu.',
         referralProcessed: false
       };
     }
@@ -499,7 +548,8 @@ function doPost(e) {
         response = processReferral(
           data.orderId,
           data.phone,
-          data.name
+          data.name,
+          data.referralCode  // Add referralCode parameter
         );
         break;
         
