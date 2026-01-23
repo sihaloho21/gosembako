@@ -1051,6 +1051,54 @@ async function saveSettings() {
     setTimeout(() => location.reload(), 1500);
 }
 
+// ============ GAS URL CONFIGURATION ============
+function saveGASUrl() {
+    const gasUrl = document.getElementById('gas-url-input').value.trim();
+    const statusDiv = document.getElementById('gas-url-status');
+    
+    if (!gasUrl) {
+        statusDiv.className = 'text-sm text-red-600 mt-2';
+        statusDiv.textContent = '❌ URL tidak boleh kosong!';
+        statusDiv.classList.remove('hidden');
+        return;
+    }
+    
+    // Validate URL format
+    try {
+        new URL(gasUrl);
+        if (!gasUrl.includes('script.google.com')) {
+            throw new Error('Invalid Google Apps Script URL');
+        }
+    } catch (e) {
+        statusDiv.className = 'text-sm text-red-600 mt-2';
+        statusDiv.textContent = '❌ URL tidak valid! Pastikan format: https://script.google.com/...';
+        statusDiv.classList.remove('hidden');
+        return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('gas_url', gasUrl);
+    
+    statusDiv.className = 'text-sm text-green-600 mt-2';
+    statusDiv.textContent = '✅ GAS URL berhasil disimpan!';
+    statusDiv.classList.remove('hidden');
+    
+    showAdminToast('GAS URL berhasil disimpan!', 'success');
+    
+    // Hide status after 3 seconds
+    setTimeout(() => {
+        statusDiv.classList.add('hidden');
+    }, 3000);
+}
+
+function loadGASUrl() {
+    const gasUrl = localStorage.getItem('gas_url') || '';
+    const gasUrlInput = document.getElementById('gas-url-input');
+    if (gasUrlInput) {
+        gasUrlInput.value = gasUrl;
+    }
+}
+
 
 
 // ============ MARKUP MODAL FUNCTIONS ============
@@ -1174,6 +1222,7 @@ function showAdminToast(message, type = 'info') {
 // ============ INITIALIZATION ============
 document.addEventListener('DOMContentLoaded', () => {
     showSection('dashboard');
+    loadGASUrl(); // Load saved GAS URL
 });
 
 // ============ VARIANT MANAGEMENT FUNCTIONS ============

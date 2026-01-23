@@ -43,12 +43,12 @@ const REFERRAL_CONFIG = {
 // ============================================================================
 
 const REFERRAL_SHEET_DEFS = {
-  users: ['id','nama','whatsapp','pin','referral_code','referrer_id','total_points','status','created_at','updated_at'],
+  users: ['id','nama','whatsapp','pin','referral_code','referrer_id','total_points','status','created_at','tanggal_daftar'],
   referrals: ['id','referrer_phone','referrer_code','referred_phone','referred_name','status','first_order_id','created_at','completed_at'],
   points_history: ['id','user_phone','referral_code','transaction_date','type','amount','balance_before','balance_after','description','source_id','created_at'],
   vouchers: ['voucher_code','type','discount_amount','referrer_phone','referred_phone','status','created_at','expiry_date','used_at','order_id','generated_by','notes'],
-  orders: ['order_id','phone','name','total_amount','status','created_at','used_voucher','referral_source'],
-  settings: ['key','value','notes']
+  orders: ['id','pelanggan','phone','produk','qty','total','poin','status','point_processed','tanggal'],
+  settings: ['key','value']
 };
 
 // ============================================================================
@@ -316,14 +316,14 @@ function processReferral(orderId, customerPhone, customerName) {
     // Step 8: Create referral record
     const referralId = 'REF-' + Date.now();
     addRowToSheet(SHEETS.REFERRALS, {
-      referral_id: referralId,
-      referrer_id: buyer.referrer_id,
-      referred_id: buyer.id,
+      id: referralId,
+      referrer_phone: referrer.whatsapp,
+      referrer_code: buyer.referrer_id,
+      referred_phone: buyer.whatsapp,
       referred_name: buyer.nama,
       status: 'completed',
-      reward_points: REFERRAL_CONFIG.REFERRER_REWARD,
-      order_id: orderId,
-      created_at: new Date().toISOString(),
+      first_order_id: orderId,
+      created_at: getNowTimestamp(),
       completed_at: getNowTimestamp()
     });
     
@@ -331,15 +331,16 @@ function processReferral(orderId, customerPhone, customerName) {
     
     // Step 9: Add points history untuk referrer
     addRowToSheet(SHEETS.POINTS_HISTORY, {
-      history_id: 'PH-' + Date.now(),
-      user_id: referrer.id,
+      id: 'PH-' + Date.now(),
+      user_phone: referrer.whatsapp,
       referral_code: referrer.referral_code,
-      transaction_type: 'referral_reward',
-      points_change: REFERRAL_CONFIG.REFERRER_REWARD,
-      points_before: parseInt(referrer.total_points || 0),
-      points_after: newPoints,
-      reference_id: referralId,
+      transaction_date: new Date().toLocaleDateString('id-ID'),
+      type: 'referral_reward',
+      amount: REFERRAL_CONFIG.REFERRER_REWARD,
+      balance_before: parseInt(referrer.total_points || 0),
+      balance_after: newPoints,
       description: 'Reward dari referral ' + buyer.nama,
+      source_id: referralId,
       created_at: getNowTimestamp()
     });
     
@@ -351,15 +352,18 @@ function processReferral(orderId, customerPhone, customerName) {
     expiryDate.setDate(expiryDate.getDate() + REFERRAL_CONFIG.VOUCHER_EXPIRY_DAYS);
     
     addRowToSheet(SHEETS.VOUCHERS, {
-      voucher_id: 'VCH-' + Date.now(),
       voucher_code: voucherCode,
       type: 'percentage',
-      value: REFERRAL_CONFIG.REFERRED_DISCOUNT_PERCENT,
-      max_discount: REFERRAL_CONFIG.REFERRED_DISCOUNT,
-      user_id: buyer.id,
-      is_used: false,
-      expires_at: expiryDate.toLocaleDateString('id-ID'),
-      created_at: getNowTimestamp()
+      discount_amount: REFERRAL_CONFIG.REFERRED_DISCOUNT,
+      referrer_phone: referrer.whatsapp,
+      referred_phone: buyer.whatsapp,
+      status: 'active',
+      created_at: getNowTimestamp(),
+      expiry_date: expiryDate.toLocaleDateString('id-ID'),
+      used_at: '',
+      order_id: '',
+      generated_by: 'system',
+      notes: 'Voucher dari program referral'
     });
     
     Logger.log('✅ Voucher created: ' + voucherCode);
@@ -392,14 +396,15 @@ function processReferral(orderId, customerPhone, customerName) {
 function getReferralStats(referralCode) {
   try {
     const referrals = getSheetData(SHEETS.REFERRALS);
-    const userReferrals = referrals.filter(r => r.referrer_id === referralCode);
+    const userReferrals = referrals.filter(r => r.referrer_code === referralCode);
     
     const completed = userReferrals.filter(r => r.status === 'completed');
     const pending = userReferrals.filter(r => r.status === 'pending');
     
-    const totalPoints = completed.reduce((sum, r) => {
-      return sum + (parseInt(r.reward_points) || 0);
-    }, 0);
+    // Calculate total points from user's total_points field
+    const users = getSheetData(SHEETS.USERS);
+    const user = users.find(u => u.referral_code === referralCode);
+    const totalPoints = user ? parseInt(user.total_points || 0) : 0;
     
     return {
       success: true,
@@ -408,11 +413,12 @@ function getReferralStats(referralCode) {
       total_pending: pending.length,
       total_points: totalPoints,
       referrals: userReferrals.map(r => ({
-        id: r.referred_id,
         name: r.referred_name,
+        phone: r.referred_phone,
         status: r.status,
-        reward_points: r.reward_points,
-        completed_at: r.completed_at
+        order_id: r.first_order_id,
+        completed_at: r.completed_at,
+        created_at: r.created_at
       }))
     };
   } catch (error) {
@@ -435,13 +441,14 @@ function getUserPointsHistory(referralCode) {
     return {
       success: true,
       history: userHistory.map(h => ({
-        id: h.history_id,
-        type: h.transaction_type,
-        change: h.points_change,
-        before: h.points_before,
-        after: h.points_after,
+        id: h.id,
+        type: h.type,
+        amount: h.amount,
+        balance_before: h.balance_before,
+        balance_after: h.balance_after,
         description: h.description,
-        date: h.created_at
+        transaction_date: h.transaction_date,
+        created_at: h.created_at
       }))
     };
   } catch (error) {

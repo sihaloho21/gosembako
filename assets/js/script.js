@@ -43,6 +43,34 @@ let filteredProducts = [];
 let storeClosed = CONFIG.isStoreClosed();
 let selectedVariation = null;
 
+/**
+ * Normalize phone number to standard format (08xxxxxxxxxx)
+ * Handles: 8xxx, 08xxx, 628xxx, +628xxx
+ */
+function normalizePhoneNumber(phone) {
+    if (!phone) return null;
+    
+    // Remove all non-digits
+    let cleaned = String(phone).replace(/[^0-9]/g, '');
+    
+    // Handle 628xxx → 08xxx
+    if (cleaned.startsWith('62')) {
+        cleaned = '0' + cleaned.substring(2);
+    }
+    
+    // Handle 8xxx → 08xxx
+    if (cleaned.startsWith('8') && !cleaned.startsWith('08')) {
+        cleaned = '0' + cleaned;
+    }
+    
+    // Validate format
+    if (!cleaned.startsWith('08') || cleaned.length < 10 || cleaned.length > 13) {
+        return null; // Invalid
+    }
+    
+    return cleaned;
+}
+
 // calculateGajianPrice is now handled in assets/js/payment-logic.js
 
 /**
@@ -1392,19 +1420,25 @@ function sendToWA() {
             
             // Process referral reward if applicable
             // Add small delay to ensure order is fully saved to SheetDB
-            if (window.referralOrderIntegration) {
+            if (typeof processOrderReferralViaGAS === 'function') {
                 setTimeout(() => {
-                    referralOrderIntegration.processOrder(
+                    const orderId = 'ORD-' + Date.now();
+                    processOrderReferralViaGAS(
+                        orderId,
                         normalizePhone(phone),
                         name
                     ).then(result => {
                         if (result.referralProcessed) {
                             console.log('✅ Referral reward processed for first order');
+                            console.log(`   • Referrer: ${result.referrer_name}`);
+                            console.log(`   • Reward: ${result.referrer_reward} poin`);
                         }
                     }).catch(err => {
-                        console.error('Error processing referral:', err);
+                        console.error('❌ Error processing referral:', err);
                     });
                 }, 3000); // 3 second delay to ensure SheetDB has processed the order
+            } else {
+                console.warn('⚠️ Referral helper not loaded, skipping referral processing');
             }
         })
         .catch(err => {
