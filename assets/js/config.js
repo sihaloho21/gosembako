@@ -292,7 +292,7 @@ const CONFIG = {
         
         // Default GAS URL (deployed from GoSembako referral system)
         // Updated to TESTING version (without first purchase validation)
-        return 'https://script.google.com/macros/s/AKfycbwPPudsnKTCoU3hRNDCYEBBMS492rgGWvwAx3-egAK_qSzUaN9TqEjh5QKdzMKGJF5D/exec';
+        return 'https://script.google.com/macros/s/AKfycbwzElUuHk6V6bJ1QbW7Zg22Gi_rQhrdWKy66WOWdd4C29UYxv2wCPrz3gtv4sKdxm4oOA/exec';
     },
     
     /**
