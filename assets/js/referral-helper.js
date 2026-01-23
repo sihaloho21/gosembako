@@ -42,8 +42,7 @@ async function callGASAPI(action, data) {
         
         const response = await fetch(gasUrl, {
             method: 'POST',
-            payload: payload,
-            muteHttpExceptions: false
+            body: payload
         });
         
         if (!response.ok) {
