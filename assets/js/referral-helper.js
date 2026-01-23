@@ -18,53 +18,102 @@
  * Call Google Apps Script backend untuk process referral
  * @param {string} action - Action name (processReferral, getReferralStats, etc)
  * @param {object} data - Data untuk dikirim ke GAS
+ * @param {number} timeout - Request timeout in milliseconds (default: 30000)
  * @returns {Promise<object>} Response dari GAS
  */
-async function callGASAPI(action, data) {
+async function callGASAPI(action, data, timeout = 30000) {
     try {
         const gasUrl = CONFIG.getGASUrl();
         
         if (!gasUrl) {
             console.error('❌ GAS URL tidak dikonfigurasi di CONFIG');
+            console.log('   Silakan atur GAS URL melalui CONFIG.setGASUrl()');
             return {
                 success: false,
                 message: 'GAS URL not configured',
-                action: action
+                action: action,
+                error: 'CONFIG_ERROR'
             };
         }
         
-        console.log(`📤 Calling GAS API: ${action}`, data);
+        console.log(`📤 [${new Date().toLocaleTimeString()}] Calling GAS API: ${action}`);
+        console.log(`   URL: ${gasUrl.substring(0, 50)}...`);
+        console.log(`   Data:`, data);
         
         const payload = JSON.stringify({
             action: action,
             ...data
         });
         
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        console.log(`   ⏱️ Timeout set: ${timeout}ms`);
+        
         const response = await fetch(gasUrl, {
             method: 'POST',
-            body: payload
+            body: payload,
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
         
+        clearTimeout(timeoutId);
+        
+        console.log(`   📨 HTTP Response: ${response.status} ${response.statusText}`);
+        
         if (!response.ok) {
+            const errorText = await response.text();
             console.error(`❌ GAS HTTP Error: ${response.status}`);
+            console.error(`   Error body:`, errorText.substring(0, 200));
             return {
                 success: false,
-                message: `HTTP ${response.status}`,
-                action: action
+                message: `HTTP ${response.status}: ${response.statusText}`,
+                action: action,
+                error: 'HTTP_ERROR',
+                status: response.status
             };
         }
         
-        const result = await response.json();
-        console.log(`✅ GAS Response (${action}):`, result);
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            console.error(`❌ Failed to parse GAS response as JSON`);
+            console.error(`   Response text:`, await response.text());
+            return {
+                success: false,
+                message: 'Invalid JSON response from GAS',
+                action: action,
+                error: 'JSON_PARSE_ERROR'
+            };
+        }
+        
+        console.log(`✅ [${new Date().toLocaleTimeString()}] GAS Response (${action}):`, result);
         
         return result;
         
     } catch (error) {
-        console.error(`❌ GAS API Error (${action}):`, error);
+        if (error.name === 'AbortError') {
+            console.error(`❌ GAS API Timeout (${action}): Request took longer than expected`);
+            return {
+                success: false,
+                message: 'Request timeout - API response too slow',
+                action: action,
+                error: 'TIMEOUT_ERROR'
+            };
+        }
+        
+        console.error(`❌ GAS API Error (${action}):`, error.message);
+        console.error(`   Error type:`, error.name);
+        console.error(`   Full error:`, error);
         return {
             success: false,
-            message: error.toString(),
-            action: action
+            message: error.message || 'Unknown error',
+            action: action,
+            error: 'NETWORK_ERROR'
         };
     }
 }
@@ -108,28 +157,88 @@ async function processOrderReferralViaGAS(orderId, phone, name) {
 
 /**
  * Get referral stats dari GAS
+ * @param {string} referralCode - Referral code pengguna
+ * @returns {Promise<object>} Stats object dengan struktur: {success, total_referred, total_completed, total_pending, total_points, referrals}
  */
 async function getReferralStatsFromGAS(referralCode) {
     console.log(`📊 Getting referral stats from GAS: ${referralCode}`);
+    
+    if (!referralCode) {
+        console.error('❌ Referral code tidak valid:', referralCode);
+        return {
+            success: false,
+            message: 'Referral code is required',
+            total_referred: 0,
+            total_completed: 0,
+            total_pending: 0,
+            total_points: 0,
+            referrals: []
+        };
+    }
     
     const result = await callGASAPI('getReferralStats', {
         referralCode: referralCode
     });
     
-    return result;
+    // Validate dan normalize response
+    if (result.success) {
+        return {
+            success: true,
+            total_referred: result.total_referred || 0,
+            total_completed: result.total_completed || 0,
+            total_pending: result.total_pending || 0,
+            total_points: parseInt(result.total_points) || 0,
+            referrals: Array.isArray(result.referrals) ? result.referrals : []
+        };
+    }
+    
+    console.warn('⚠️ getReferralStats failed:', result.message);
+    return {
+        success: false,
+        message: result.message || 'Failed to get stats',
+        total_referred: 0,
+        total_completed: 0,
+        total_pending: 0,
+        total_points: 0,
+        referrals: []
+    };
 }
 
 /**
  * Get points history dari GAS
+ * @param {string} referralCode - Referral code pengguna
+ * @returns {Promise<object>} History object dengan struktur: {success, history}
  */
 async function getPointsHistoryFromGAS(referralCode) {
     console.log(`📝 Getting points history from GAS: ${referralCode}`);
+    
+    if (!referralCode) {
+        console.error('❌ Referral code tidak valid:', referralCode);
+        return {
+            success: false,
+            message: 'Referral code is required',
+            history: []
+        };
+    }
     
     const result = await callGASAPI('getUserPointsHistory', {
         referralCode: referralCode
     });
     
-    return result;
+    // Validate dan normalize response
+    if (result.success) {
+        return {
+            success: true,
+            history: Array.isArray(result.history) ? result.history : []
+        };
+    }
+    
+    console.warn('⚠️ getPointsHistoryFromGAS failed:', result.message);
+    return {
+        success: false,
+        message: result.message || 'Failed to get history',
+        history: []
+    };
 }
 
 // ============================================================================
