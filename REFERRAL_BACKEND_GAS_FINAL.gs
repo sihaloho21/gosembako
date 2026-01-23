@@ -1,5 +1,5 @@
 /**
- * GOOGLE APPS SCRIPT: Referral System Backend
+ * GOOGLE APPS SCRIPT: Referral System Backend (UPDATED v3)
  * 
  * Functionality:
  * 1. Process new orders dan track first-time purchases
@@ -36,7 +36,7 @@ const REFERRAL_CONFIG = {
   REFERRED_DISCOUNT: 25000,      // Max diskon untuk referred user (Rp 25.000)
   REFERRED_DISCOUNT_PERCENT: 10, // Diskon percentage (10%)
   VOUCHER_EXPIRY_DAYS: 30,       // Voucher berlaku selama 30 hari
-  ENFORCE_FIRST_ORDER_ONLY: false // Set to true untuk enforce hanya first order dapat reward, false untuk semua order
+  ENFORCE_FIRST_ORDER_ONLY: true // Set to true untuk enforce hanya first order dapat reward
 };
 
 // ============================================================================
@@ -375,22 +375,22 @@ function processReferral(orderId, customerPhone, customerName, referralCode) {
     
     Logger.log('📊 Buyer has ' + buyerOrders.length + ' orders total');
     
-    // ✅ VALIDATION: Gunakan flag ENFORCE_FIRST_ORDER_ONLY untuk control behavior
-    // Saat false: semua order dapat reward
-    // Saat true: hanya first order dapat reward
+    // ✅ UNCOMMENTED: Validasi first order menggunakan flag ENFORCE_FIRST_ORDER_ONLY
     if (REFERRAL_CONFIG.ENFORCE_FIRST_ORDER_ONLY && buyerOrders.length !== 1) {
-      Logger.log('⛔ [ENFORCE_TRUE] Bukan first order, skip reward');
+      Logger.log('⛔ [ENFORCE] Bukan first order dari buyer, skip referral credit');
+      Logger.log('   ENFORCE_FIRST_ORDER_ONLY = true');
       return {
         success: true,
-        message: 'Bukan pembelian pertama',
-        referralProcessed: false
+        message: 'Bukan pembelian pertama - reward hanya untuk first purchase',
+        referralProcessed: false,
+        reason: 'not_first_order'
       };
     }
     
     if (REFERRAL_CONFIG.ENFORCE_FIRST_ORDER_ONLY) {
-      Logger.log('✅ [ENFORCE] First order validation PASSED');
+      Logger.log('✅ [ENFORCE] First order validation PASSED (total orders: 1)');
     } else {
-      Logger.log('✅ [ALLOWED] Proses reward untuk SEMUA order (ENFORCE_FIRST_ORDER_ONLY=false)');
+      Logger.log('✅ [ALLOWED] Proses reward (ENFORCE_FIRST_ORDER_ONLY=false)');
     }
     
     // Step 7: Credit referrer dengan poin
