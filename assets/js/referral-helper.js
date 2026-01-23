@@ -191,6 +191,14 @@ function getReferralCodeFromSession() {
 }
 
 /**
+ * Get referral code dari localStorage atau sessionStorage
+ * Cek localStorage dulu (lebih persisten), fallback ke sessionStorage
+ */
+function getReferralCode() {
+    return localStorage.getItem('referral_code') || sessionStorage.getItem('referral_code') || null;
+}
+
+/**
  * Clear referral data setelah user berhasil daftar
  */
 function clearReferralSession() {
