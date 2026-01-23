@@ -291,7 +291,8 @@ const CONFIG = {
         if (stored) return stored;
         
         // Default GAS URL (deployed from GoSembako referral system)
-        return 'https://script.google.com/macros/s/AKfycbwljO0pb8x2kggfnJ7rW1YulD-a5VUu2K7nLNepXctLS0hfDV_90kEabkyQfkXA_qYd-Q/exec';
+        // Updated to TESTING version (without first purchase validation)
+        return 'https://script.google.com/macros/s/AKfycbwPPudsnKTCoU3hRNDCYEBBMS492rgGWvwAx3-egAK_qSzUaN9TqEjh5QKdzMKGJF5D/exec';
     },
     
     /**
