@@ -204,8 +204,7 @@ function saveLoggedInUser(user) {
         id: user.id,
         nama: user.nama,
         whatsapp: normalizedPhone || user.whatsapp,
-        tanggal_daftar: user.tanggal_daftar,
-        referral_code: user.referral_code || user.whatsapp // fallback to phone if no referral_code
+        tanggal_daftar: user.tanggal_daftar
     }));
 }
 
@@ -819,15 +818,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             second: '2-digit'
         });
         
-        // Generate referral code: First 4 letters of name + 4 random digits
-        // e.g., "Budi Santoso" -> "BUDI" + random 1000-9999 -> "BUDI1234"
-        const nameForCode = name.replace(/\s/g, '').substring(0, 4).toUpperCase();
-        const randomDigits = Math.floor(Math.random() * 9000) + 1000;
-        const referralCode = nameForCode + randomDigits;
-        
-        // Check if user came from referral link
-        const urlParams = new URLSearchParams(window.location.search);
-        const referrerCode = urlParams.get('ref') || sessionStorage.getItem('referral_code');
+
         
         // Create new user
         const createResponse = await fetch(`${apiUrl}?sheet=users`, {
@@ -840,8 +831,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
                 pin: pin,
                 tanggal_daftar: today,
                 status: 'aktif',
-                referral_code: referralCode,
-                referrer_id: referrerCode || '',
+
                 total_points: 0,
                 created_at: now
             })

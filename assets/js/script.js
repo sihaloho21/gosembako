@@ -1418,27 +1418,7 @@ function sendToWA() {
         .then(data => {
             console.log('Order logged to spreadsheet:', data);
             
-            // Process referral reward if applicable
-            // Add small delay to ensure order is fully saved to SheetDB
-            if (typeof processOrderReferralViaGAS === 'function') {
-                setTimeout(() => {
-                    processOrderReferralViaGAS(
-                        orderId,  // Use the actual order ID, not a new one
-                        normalizePhone(phone),
-                        name
-                    ).then(result => {
-                        if (result.referralProcessed) {
-                            console.log('✅ Referral reward processed for first order');
-                            console.log(`   • Referrer: ${result.referrer_name}`);
-                            console.log(`   • Reward: ${result.referrer_reward} poin`);
-                        }
-                    }).catch(err => {
-                        console.error('❌ Error processing referral:', err);
-                    });
-                }, 3000); // 3 second delay to ensure SheetDB has processed the order
-            } else {
-                console.warn('⚠️ Referral helper not loaded, skipping referral processing');
-            }
+
         })
         .catch(err => {
             console.error('Error logging order:', err);

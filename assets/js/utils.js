@@ -344,14 +344,6 @@ function isValidUrl(url) {
     }
 }
 
-/**
- * Validate referral code format
- * @param {string} code - Referral code
- * @returns {boolean} True if valid
- */
-function isValidReferralCode(code) {
-    return /^[A-Z0-9]{4,10}$/.test(code);
-}
 
 // ============================================================================
 // UTILITY EXPORTS (for reusability)
@@ -388,8 +380,7 @@ const Utils = {
     // Validation
     isValidEmail,
     isValidPhone,
-    isValidUrl,
-    isValidReferralCode
+    isValidUrl
 };
 
 // Export for use

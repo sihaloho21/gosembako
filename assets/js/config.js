@@ -333,83 +333,7 @@ const CONFIG = {
         localStorage.setItem(this.STORAGE_KEYS.STORE_CLOSED, closed ? 'true' : 'false');
     },
 
-    /**
-     * Mendapatkan Google Apps Script URL untuk referral backend
-     * @returns {string} GAS Web App URL
-     */
-    getGASUrl() {
-        // Priority: sessionStorage > localStorage > defaults
-        const runtime = sessionStorage.getItem('runtime_gas_url');
-        if (runtime) return runtime;
-        
-        const stored = localStorage.getItem('sembako_gas_url');
-        if (stored) return stored;
-        
-        // Default GAS URL (deployed from GoSembako referral system)
-        // Updated to TESTING version (without first purchase validation)
-        return 'https://script.google.com/macros/s/AKfycbwzElUuHk6V6bJ1QbW7Zg22Gi_rQhrdWKy66WOWdd4C29UYxv2wCPrz3gtv4sKdxm4oOA/exec';
-    },
-    
-    /**
-     * Menyimpan Google Apps Script URL
-     * @param {string} url - GAS Web App URL
-     * @returns {boolean} true jika berhasil
-     */
-    setGASUrl(url) {
-        if (!url || !url.trim()) {
-            console.error('❌ GAS URL tidak valid');
-            return false;
-        }
-        
-        url = url.trim();
-        
-        // Validate URL format
-        if (!url.startsWith('https://script.google.com/')) {
-            console.error('❌ GAS URL harus dari script.google.com');
-            return false;
-        }
-        
-        localStorage.setItem('sembako_gas_url', url);
-        sessionStorage.setItem('runtime_gas_url', url);
-        
-        // Clear API cache untuk ensure fresh start
-        if (typeof ApiService !== 'undefined') {
-            ApiService.clearCache();
-        }
-        
-        console.log('✅ GAS URL berhasil diupdate:', url);
-        return true;
-    },
-    
-    /**
-     * Test koneksi ke GAS backend
-     * @returns {Promise<boolean>} true jika GAS online
-     */
-    async testGASConnection() {
-        const gasUrl = this.getGASUrl();
-        
-        if (!gasUrl) {
-            console.warn('⚠️ GAS URL tidak dikonfigurasi');
-            return false;
-        }
-        
-        try {
-            const testUrl = gasUrl + '?action=getStats';
-            const response = await fetch(testUrl);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ GAS Connection OK:', data);
-                return true;
-            } else {
-                console.error('❌ GAS HTTP Error:', response.status);
-                return false;
-            }
-        } catch (error) {
-            console.error('❌ GAS Connection Error:', error);
-            return false;
-        }
-    },
+
     
     /**
      * Mendapatkan semua konfigurasi saat ini
@@ -419,7 +343,6 @@ const CONFIG = {
         return {
             mainApi: this.getMainApiUrl(),
             adminApi: this.getAdminApiUrl(),
-            gasUrl: this.getGASUrl(),
             gajian: this.getGajianConfig(),
             reward: this.getRewardConfig(),
             storeClosed: this.isStoreClosed()
