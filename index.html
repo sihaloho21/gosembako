@@ -960,13 +960,27 @@
     <script src="assets/js/image-slider.js"></script>
 
     <script>
-        // Fetch bootstrap API settings before loading main script
-        (async () => {
-            // Fetch bootstrap API settings (if configured)
-            await CONFIG.fetchSettings();
-            // Start monitoring for API changes (check every 30 seconds + event-based trigger)
-            CONFIG.startApiChangeMonitoring(30000);
-        })();
+        // Lazy load bootstrap API settings on first user interaction
+        let settingsFetchedOnce = false;
+        
+        const lazyFetchSettings = async () => {
+            if (!settingsFetchedOnce) {
+                settingsFetchedOnce = true;
+                await CONFIG.fetchSettings();
+                // Start monitoring for API changes (event-based trigger only, no interval)
+                CONFIG.startApiChangeMonitoring(0);
+            }
+        };
+        
+        // Trigger on first user interaction
+        ['click', 'scroll', 'keydown', 'touchstart'].forEach(event => {
+            document.addEventListener(event, lazyFetchSettings, { once: true });
+        });
+        
+        // Also trigger on page visibility change (tab focus)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) lazyFetchSettings();
+        });
     </script>
     
     <script src="assets/js/promo-banner-carousel.js"></script>
