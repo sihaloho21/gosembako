@@ -54,14 +54,10 @@ const CONFIG = {
         const currentMainApi = this.getMainApiUrl();
         
         if (this._lastMainApiUrl && this._lastMainApiUrl !== currentMainApi) {
-            console.log('🔄 [CONFIG] API URL changed detected!');
-            console.log(`  Old: ${this._lastMainApiUrl}`);
-            console.log(`  New: ${currentMainApi}`);
             
             // Clear cache
             if (typeof ApiService !== 'undefined') {
                 ApiService.clearCache();
-                console.log('✅ [CONFIG] Cache cleared due to API change');
             }
             
             // Clear session storage untuk force re-fetch
@@ -69,7 +65,6 @@ const CONFIG = {
             sessionStorage.removeItem('runtime_admin_api_url');
             
             // Reload page untuk menggunakan API baru
-            console.log('🔄 [CONFIG] Reloading page to apply new API...');
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
@@ -92,7 +87,6 @@ const CONFIG = {
         }, interval);
         // Setup event listener for manual API change trigger
         window.addEventListener('api-config-changed', () => {
-            console.log('🔔 [CONFIG] API config change event detected');
             this._detectApiChange();
         });
     },
@@ -104,7 +98,6 @@ const CONFIG = {
         if (this._apiChangeCheckInterval) {
             clearInterval(this._apiChangeCheckInterval);
             this._apiChangeCheckInterval = null;
-            console.log('⏹️ [CONFIG] API change monitoring stopped');
         }
     },
     
@@ -117,18 +110,15 @@ const CONFIG = {
         
         // Jika tidak ada bootstrap API, skip
         if (!bootstrapApi) {
-            console.log('⚠️ [CONFIG] No bootstrap API configured, using localStorage');
             return false;
         }
         
         // Jika sudah fetch di session ini, skip
         if (this._settingsFetched) {
-            console.log('✅ [CONFIG] Settings already fetched this session');
             return true;
         }
         
         try {
-            console.log('🔄 [CONFIG] Fetching settings from bootstrap API...');
             const response = await fetch(`${bootstrapApi}?sheet=settings`);
             
             if (!response.ok) {
@@ -136,7 +126,6 @@ const CONFIG = {
             }
             
             const settings = await response.json();
-            console.log('📥 [CONFIG] Settings received:', settings);
             
             // Parse settings array menjadi object
             const settingsObj = {};
@@ -147,12 +136,10 @@ const CONFIG = {
             // Update sessionStorage dengan settings dari server
             if (settingsObj.main_api_url) {
                 sessionStorage.setItem('runtime_main_api_url', settingsObj.main_api_url);
-                console.log('✅ [CONFIG] Main API URL updated:', settingsObj.main_api_url);
             }
             
             if (settingsObj.admin_api_url) {
                 sessionStorage.setItem('runtime_admin_api_url', settingsObj.admin_api_url);
-                console.log('✅ [CONFIG] Admin API URL updated:', settingsObj.admin_api_url);
             }
             
             this._settingsFetched = true;
@@ -210,7 +197,6 @@ const CONFIG = {
             // ✅ Clear cache saat API berubah
             if (typeof ApiService !== 'undefined') {
                 ApiService.clearCache();
-                console.log('✅ API cache cleared after URL change');
             }
             // ✅ Clear sessionStorage runtime cache
             sessionStorage.removeItem('runtime_main_api_url');
@@ -229,7 +215,6 @@ const CONFIG = {
             // ✅ Clear cache saat API berubah
             if (typeof ApiService !== 'undefined') {
                 ApiService.clearCache();
-                console.log('✅ API cache cleared after URL change');
             }
             // ✅ Clear sessionStorage runtime cache
             sessionStorage.removeItem('runtime_admin_api_url');
@@ -251,7 +236,6 @@ const CONFIG = {
         // ✅ Clear cache saat reset
         if (typeof ApiService !== 'undefined') {
             ApiService.clearCache();
-            console.log('✅ API cache cleared after reset to default');
         }
         // ✅ Clear sessionStorage runtime cache
         sessionStorage.removeItem('runtime_main_api_url');
