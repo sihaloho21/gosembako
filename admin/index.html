@@ -791,6 +791,17 @@
 
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/api-service.js"></script>
+    
+    <script>
+        // Fetch bootstrap API settings before loading admin scripts
+        (async () => {
+            // Fetch bootstrap API settings (if configured)
+            await CONFIG.fetchSettings();
+            // Start monitoring for API changes
+            CONFIG.startApiChangeMonitoring();
+        })();
+    </script>
+    
     <script src="js/tiered-pricing.js"></script>
     <script src="js/banner-management.js"></script>
     <script src="js/admin-script.js"></script>

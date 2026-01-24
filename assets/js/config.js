@@ -24,6 +24,8 @@ const CONFIG = {
     
     // Session storage for fetched settings
     _settingsFetched: false,
+    _lastMainApiUrl: null,
+    _apiChangeCheckInterval: null,
     
     /**
      * Mendapatkan Bootstrap API URL
@@ -43,6 +45,59 @@ const CONFIG = {
             return true;
         }
         return false;
+    },
+    
+    /**
+     * Detect jika API URL berubah dan clear cache
+     */
+    _detectApiChange() {
+        const currentMainApi = this.getMainApiUrl();
+        
+        if (this._lastMainApiUrl && this._lastMainApiUrl !== currentMainApi) {
+            console.log('🔄 [CONFIG] API URL changed detected!');
+            console.log(`  Old: ${this._lastMainApiUrl}`);
+            console.log(`  New: ${currentMainApi}`);
+            
+            // Clear cache
+            if (typeof ApiService !== 'undefined') {
+                ApiService.clearCache();
+                console.log('✅ [CONFIG] Cache cleared due to API change');
+            }
+            
+            // Clear session storage untuk force re-fetch
+            sessionStorage.removeItem('runtime_main_api_url');
+            sessionStorage.removeItem('runtime_admin_api_url');
+            
+            // Reload page untuk menggunakan API baru
+            console.log('🔄 [CONFIG] Reloading page to apply new API...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+        
+        this._lastMainApiUrl = currentMainApi;
+    },
+    
+    /**
+     * Start monitoring API changes (call this periodically)
+     */
+    startApiChangeMonitoring() {
+        // Check every 5 seconds
+        this._apiChangeCheckInterval = setInterval(() => {
+            this._detectApiChange();
+        }, 5000);
+        console.log('✅ [CONFIG] API change monitoring started');
+    },
+    
+    /**
+     * Stop monitoring API changes
+     */
+    stopApiChangeMonitoring() {
+        if (this._apiChangeCheckInterval) {
+            clearInterval(this._apiChangeCheckInterval);
+            this._apiChangeCheckInterval = null;
+            console.log('⏹️ [CONFIG] API change monitoring stopped');
+        }
     },
     
     /**

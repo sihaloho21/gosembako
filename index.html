@@ -967,6 +967,8 @@
         (async () => {
             // Fetch bootstrap API settings (if configured)
             await CONFIG.fetchSettings();
+            // Start monitoring for API changes
+            CONFIG.startApiChangeMonitoring();
         })();
     </script>
     <script src="assets/js/script.js"></script>
