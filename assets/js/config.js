@@ -98,7 +98,7 @@ const CONFIG = {
             this._detectApiChange();
         });
         console.log('✅ [CONFIG] Event listener registered for manual API change trigger');
-    }
+    },
     
     /**
      * Stop monitoring API changes
