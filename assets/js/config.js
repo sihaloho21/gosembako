@@ -90,14 +90,11 @@ const CONFIG = {
         this._apiChangeCheckInterval = setInterval(() => {
             this._detectApiChange();
         }, interval);
-        console.log(`✅ [CONFIG] API change monitoring started (interval: ${interval}ms)`);
-        
         // Setup event listener for manual API change trigger
         window.addEventListener('api-config-changed', () => {
             console.log('🔔 [CONFIG] API config change event detected');
             this._detectApiChange();
         });
-        console.log('✅ [CONFIG] Event listener registered for manual API change trigger');
     },
     
     /**
