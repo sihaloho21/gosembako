@@ -80,14 +80,25 @@ const CONFIG = {
     
     /**
      * Start monitoring API changes (call this periodically)
+     * @param {number} interval - Interval in milliseconds (default: 30000 = 30 seconds)
      */
-    startApiChangeMonitoring() {
-        // Check every 5 seconds
+    startApiChangeMonitoring(interval = 30000) {
+        // Stop previous monitoring if any
+        this.stopApiChangeMonitoring();
+        
+        // Check every X milliseconds (default 30 seconds)
         this._apiChangeCheckInterval = setInterval(() => {
             this._detectApiChange();
-        }, 5000);
-        console.log('✅ [CONFIG] API change monitoring started');
-    },
+        }, interval);
+        console.log(`✅ [CONFIG] API change monitoring started (interval: ${interval}ms)`);
+        
+        // Setup event listener for manual API change trigger
+        window.addEventListener('api-config-changed', () => {
+            console.log('🔔 [CONFIG] API config change event detected');
+            this._detectApiChange();
+        });
+        console.log('✅ [CONFIG] Event listener registered for manual API change trigger');
+    }
     
     /**
      * Stop monitoring API changes

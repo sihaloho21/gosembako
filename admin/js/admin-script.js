@@ -884,6 +884,10 @@ async function saveSettings() {
         minPoint
     });
     
+    // Trigger API config change event for all open tabs/windows
+    window.dispatchEvent(new Event('api-config-changed'));
+    console.log('🔔 [ADMIN] Dispatched api-config-changed event to all listeners');
+    
     // Show detailed success message
     const successMsg = `✅ Pengaturan Berhasil Disimpan!\n\n📡 Main API: ${mainApi.substring(0, 40)}...\n🔧 Admin API: ${adminApi.substring(0, 40)}...\n🗑️ Cache cleared\n\n⏳ Reloading...`;
     alert(successMsg);
