@@ -9,7 +9,7 @@ const CONFIG = {
     DEFAULTS: {
         MAIN_API: 'https://sheetdb.io/api/v1/69tmq2wp19sr7',
         ADMIN_API: 'https://sheetdb.io/api/v1/69tmq2wp19sr7',
-        VERSION: '1.0.0'
+        VERSION: '1.0.1'
     },
     
     // Storage keys
