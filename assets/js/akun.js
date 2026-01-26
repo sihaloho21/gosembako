@@ -1206,3 +1206,209 @@ createOrderCard = function(order) {
     
     return card;
 };
+
+/**
+ * Switch between reward tabs
+ */
+function switchRewardTab(tab) {
+    const exchangeTab = document.getElementById('tab-exchange');
+    const historyTab = document.getElementById('tab-history');
+    const exchangeContent = document.getElementById('exchange-content');
+    const historyContent = document.getElementById('history-content');
+    
+    if (tab === 'exchange') {
+        // Activate exchange tab
+        exchangeTab.classList.add('text-amber-600', 'border-amber-600');
+        exchangeTab.classList.remove('text-gray-400', 'border-transparent');
+        historyTab.classList.add('text-gray-400', 'border-transparent');
+        historyTab.classList.remove('text-amber-600', 'border-amber-600');
+        
+        exchangeContent.classList.remove('hidden');
+        historyContent.classList.add('hidden');
+    } else if (tab === 'history') {
+        // Activate history tab
+        historyTab.classList.add('text-amber-600', 'border-amber-600');
+        historyTab.classList.remove('text-gray-400', 'border-transparent');
+        exchangeTab.classList.add('text-gray-400', 'border-transparent');
+        exchangeTab.classList.remove('text-amber-600', 'border-amber-600');
+        
+        historyContent.classList.remove('hidden');
+        exchangeContent.classList.add('hidden');
+        
+        // Load claims history when switching to this tab
+        loadClaimsHistory();
+    }
+}
+
+/**
+ * Load claims history from the claims sheet
+ */
+async function loadClaimsHistory() {
+    const user = getLoggedInUser();
+    if (!user) return;
+    
+    const loadingDiv = document.getElementById('claims-loading');
+    const emptyDiv = document.getElementById('claims-empty');
+    const claimsList = document.getElementById('claims-list');
+    
+    // Show loading
+    loadingDiv.classList.remove('hidden');
+    emptyDiv.classList.add('hidden');
+    claimsList.innerHTML = '';
+    
+    try {
+        const apiUrl = CONFIG.getMainApiUrl();
+        
+        // Fetch claims by phone from claims sheet
+        const variants = phoneLookupVariants(user.whatsapp);
+        const phoneQuery = variants.map(v => `phone=${encodeURIComponent(v)}`).join('&');
+        const response = await fetch(`${apiUrl}?sheet=claims&${phoneQuery}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch claims');
+        }
+        
+        const claimsData = parseSheetResponse(await response.json());
+        
+        // Hide loading
+        loadingDiv.classList.add('hidden');
+        
+        if (!claimsData || claimsData.length === 0) {
+            emptyDiv.classList.remove('hidden');
+            return;
+        }
+        
+        // Sort by date (newest first)
+        claimsData.sort((a, b) => {
+            const dateA = new Date(a.tanggal || a.date || 0);
+            const dateB = new Date(b.tanggal || b.date || 0);
+            return dateB - dateA;
+        });
+        
+        // Render claims
+        claimsData.forEach(claim => {
+            const claimCard = createClaimCard(claim);
+            claimsList.appendChild(claimCard);
+        });
+        
+    } catch (error) {
+        console.error('Error loading claims history:', error);
+        loadingDiv.classList.add('hidden');
+        emptyDiv.classList.remove('hidden');
+    }
+}
+
+/**
+ * Create a claim card element
+ */
+function createClaimCard(claim) {
+    const card = document.createElement('div');
+    card.className = 'border border-gray-200 rounded-xl p-4 hover:shadow-md transition';
+    
+    // Status colors
+    const statusColors = {
+        'pending': 'bg-yellow-100 text-yellow-700',
+        'approved': 'bg-green-100 text-green-700',
+        'completed': 'bg-blue-100 text-blue-700',
+        'rejected': 'bg-red-100 text-red-700'
+    };
+    
+    const status = (claim.status || 'pending').toLowerCase();
+    const statusColor = statusColors[status] || 'bg-gray-100 text-gray-700';
+    
+    // Status labels in Indonesian
+    const statusLabels = {
+        'pending': 'Menunggu',
+        'approved': 'Disetujui',
+        'completed': 'Selesai',
+        'rejected': 'Ditolak'
+    };
+    
+    const statusLabel = statusLabels[status] || claim.status || 'Menunggu';
+    
+    // Format date
+    const date = new Date(claim.tanggal || claim.date);
+    const formattedDate = date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    card.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <div class="flex-1">
+                <h5 class="font-bold text-gray-800">${claim.hadiah || claim.reward || 'Reward'}</h5>
+                <p class="text-xs text-gray-500 mt-1">${formattedDate}</p>
+            </div>
+            <span class="${statusColor} text-xs font-bold px-3 py-1 rounded-full">${statusLabel}</span>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-semibold text-gray-700">${claim.poin || 0} Poin</span>
+            </div>
+            ${claim.id ? `<span class="text-xs text-gray-400">#${claim.id}</span>` : ''}
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * Close loyalty modal
+ */
+function closeLoyaltyModal() {
+    document.getElementById('loyalty-modal').classList.add('hidden');
+    // Reset to exchange tab
+    switchRewardTab('exchange');
+}
+
+/**
+ * Update openRewardModal to load points and open modal
+ */
+function openRewardModal() {
+    const user = getLoggedInUser();
+    if (!user) return;
+    
+    // Load and display user's current points
+    loadModalPoints();
+    
+    // Show modal
+    document.getElementById('loyalty-modal').classList.remove('hidden');
+    
+    // Default to exchange tab
+    switchRewardTab('exchange');
+}
+
+/**
+ * Load points for the modal display
+ */
+async function loadModalPoints() {
+    const user = getLoggedInUser();
+    if (!user) return;
+    
+    try {
+        const apiUrl = CONFIG.getMainApiUrl();
+        const response = await fetch(`${apiUrl}?sheet=user_points&phone=${user.whatsapp}`);
+        
+        if (!response.ok) {
+            document.getElementById('loyalty-modal-points').textContent = '0';
+            return;
+        }
+        
+        const pointsData = await response.json();
+        
+        if (pointsData && pointsData.length > 0) {
+            const userPoints = pointsData[0];
+            const points = parseInt(userPoints.points || userPoints.poin || 0);
+            document.getElementById('loyalty-modal-points').textContent = points;
+        } else {
+            document.getElementById('loyalty-modal-points').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error loading modal points:', error);
+        document.getElementById('loyalty-modal-points').textContent = '0';
+    }
+}
