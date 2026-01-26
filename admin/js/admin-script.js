@@ -196,19 +196,14 @@ async function updateOrderStatus(id, newStatus) {
             return;
         }
 
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: 'update',
-                sheet: ORDERS_SHEET,
-                id: id,
-                data: { status: newStatus } 
-            })
+        const result = await apiPost(API_URL, { 
+            action: 'update',
+            sheet: ORDERS_SHEET,
+            id: id,
+            data: { status: newStatus } 
         });
-        const result = await response.json();
         
-        if (result.affected > 0 || response.ok) {
+        if (result.affected > 0) {
             if (newStatus === 'Terima' && order.point_processed !== 'Yes') {
                 if (order.phone && order.poin) {
                     const pointsToAdd = parseFloat(order.poin) || 0;
@@ -221,48 +216,36 @@ async function updateOrderStatus(id, newStatus) {
                     let pointUpdateSuccess = false;
                     if (Array.isArray(userData) && userData.length > 0) {
                         const currentPoints = parseFloat(userData[0].points) || 0;
-                        const updateRes = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain' },
-                            body: JSON.stringify({ 
-                                action: 'update',
-                                sheet: 'user_points',
-                                id: userData[0].id,
-                                data: { 
-                                    points: currentPoints + pointsToAdd,
-                                    last_updated: new Date().toLocaleString('id-ID')
-                                } 
-                            })
+                        const updateRes = await apiPost(API_URL, { 
+                            action: 'update',
+                            sheet: 'user_points',
+                            id: userData[0].id,
+                            data: { 
+                                points: currentPoints + pointsToAdd,
+                                last_updated: new Date().toLocaleString('id-ID')
+                            } 
                         });
-                        if (updateRes.ok) pointUpdateSuccess = true;
+                        if (updateRes.affected > 0) pointUpdateSuccess = true;
                     } else {
-                        const createRes = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain' },
-                            body: JSON.stringify({ 
-                                action: 'create',
-                                sheet: 'user_points',
-                                data: { 
-                                    id: Date.now().toString(),
-                                    phone: phone,
-                                    points: pointsToAdd,
-                                    last_updated: new Date().toLocaleString('id-ID')
-                                } 
-                            })
+                        const createRes = await apiPost(API_URL, { 
+                            action: 'create',
+                            sheet: 'user_points',
+                            data: { 
+                                id: Date.now().toString(),
+                                phone: phone,
+                                points: pointsToAdd,
+                                last_updated: new Date().toLocaleString('id-ID')
+                            } 
                         });
-                        if (createRes.ok) pointUpdateSuccess = true;
+                        if (createRes.created > 0) pointUpdateSuccess = true;
                     }
 
                     if (pointUpdateSuccess) {
-                        await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain' },
-                            body: JSON.stringify({ 
-                                action: 'update',
-                                sheet: ORDERS_SHEET,
-                                id: id,
-                                data: { point_processed: 'Yes' } 
-                            })
+                        await apiPost(API_URL, { 
+                            action: 'update',
+                            sheet: ORDERS_SHEET,
+                            id: id,
+                            data: { point_processed: 'Yes' } 
                         });
                         
 
@@ -337,17 +320,12 @@ function openEditCategory(id, nama, deskripsi) {
 
 async function handleEditCategory(id, nama, deskripsi) {
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: 'update',
-                sheet: CATEGORIES_SHEET,
-                id: id,
-                data: { nama, deskripsi } 
-            })
+        const result = await apiPost(API_URL, { 
+            action: 'update',
+            sheet: CATEGORIES_SHEET,
+            id: id,
+            data: { nama, deskripsi } 
         });
-        const result = await response.json();
         if (result.affected > 0) {
             showAdminToast('Kategori berhasil diperbarui!', 'success');
             fetchCategories();
@@ -361,16 +339,11 @@ async function handleEditCategory(id, nama, deskripsi) {
 async function handleDeleteCategory(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus kategori ini?')) return;
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: 'delete',
-                sheet: CATEGORIES_SHEET,
-                id: id
-            })
+        const result = await apiPost(API_URL, { 
+            action: 'delete',
+            sheet: CATEGORIES_SHEET,
+            id: id
         });
-        const result = await response.json();
         if (result.deleted > 0) {
             showAdminToast('Kategori berhasil dihapus!', 'success');
             fetchCategories();
@@ -507,18 +480,12 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
         const action = id ? 'update' : 'create';
         const productId = id || Date.now().toString();
         
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: action,
-                sheet: PRODUCTS_SHEET,
-                id: productId,
-                data: id ? data : { ...data, id: productId }
-            })
+        const result = await apiPost(API_URL, { 
+            action: action,
+            sheet: PRODUCTS_SHEET,
+            id: productId,
+            data: id ? data : { ...data, id: productId }
         });
-
-        const result = await response.json();
         if (result.affected > 0 || result.created > 0) {
             showAdminToast(id ? 'Produk berhasil diperbarui!' : 'Produk berhasil ditambahkan!', 'success');
             closeModal();
@@ -536,16 +503,11 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
 async function handleDelete(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: 'delete',
-                sheet: PRODUCTS_SHEET,
-                id: id
-            })
+        const result = await apiPost(API_URL, { 
+            action: 'delete',
+            sheet: PRODUCTS_SHEET,
+            id: id
         });
-        const result = await response.json();
         if (result.deleted > 0) {
             showAdminToast('Produk berhasil dihapus!', 'success');
             fetchAdminProducts();
@@ -567,12 +529,11 @@ document.getElementById('category-form').addEventListener('submit', async (e) =>
     submitBtn.innerHTML = 'Menyimpan...';
 
     try {
-        const response = await fetch(`${API_URL}?sheet=${CATEGORIES_SHEET}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ data: { id: Date.now().toString(), nama, deskripsi } })
+        const result = await apiPost(API_URL, { 
+            action: 'create',
+            sheet: CATEGORIES_SHEET,
+            data: { id: Date.now().toString(), nama, deskripsi }
         });
-        const result = await response.json();
         if (result.created > 0) {
             showAdminToast('Kategori berhasil ditambahkan!', 'success');
             e.target.reset();
@@ -666,16 +627,11 @@ async function handleDeleteTukarPoin(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus produk tukar poin ini?')) return;
     
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: 'delete',
-                sheet: TUKAR_POIN_SHEET,
-                id: id
-            })
+        const result = await apiPost(API_URL, { 
+            action: 'delete',
+            sheet: TUKAR_POIN_SHEET,
+            id: id
         });
-        const result = await response.json();
         if (result.deleted > 0) {
             showAdminToast('Produk tukar poin berhasil dihapus!', 'success');
             fetchTukarPoin();
@@ -718,19 +674,14 @@ document.getElementById('tukar-poin-form').addEventListener('submit', async (e) 
         const action = id ? 'update' : 'create';
         const productId = id || Date.now().toString();
         
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: action,
-                sheet: TUKAR_POIN_SHEET,
-                id: productId,
-                data: id ? data : { ...data, id: productId }
-            })
+        const result = await apiPost(API_URL, { 
+            action: action,
+            sheet: TUKAR_POIN_SHEET,
+            id: productId,
+            data: id ? data : { ...data, id: productId }
         });
         
-        const result = await response.json();
-        if (result.created > 0 || result.affected > 0 || response.ok) {
+        if (result.created > 0 || result.affected > 0) {
             showAdminToast(id ? 'Produk tukar poin berhasil diperbarui!' : 'Produk tukar poin berhasil ditambahkan!', 'success');
             closeTukarPoinModal();
             fetchTukarPoin();
@@ -785,21 +736,16 @@ async function editUserPoints(phone, currentPoints) {
             return;
         }
         
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                action: 'update',
-                sheet: 'user_points',
-                id: user.id,
-                data: { 
-                    points: parseFloat(newPoints),
-                    last_updated: new Date().toLocaleString('id-ID')
-                } 
-            })
+        const result = await apiPost(API_URL, { 
+            action: 'update',
+            sheet: 'user_points',
+            id: user.id,
+            data: { 
+                points: parseFloat(newPoints),
+                last_updated: new Date().toLocaleString('id-ID')
+            } 
         });
-        const result = await response.json();
-        if (result.affected > 0 || response.ok) {
+        if (result.affected > 0) {
             showAdminToast('Saldo poin diperbarui!', 'success');
             fetchUserPoints();
         }

@@ -826,23 +826,22 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
 
         
         // Create new user
-        const createResponse = await fetch(`${apiUrl}?sheet=users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        const createResult = await apiPost(apiUrl, {
+            action: 'create',
+            sheet: 'users',
+            data: {
                 id: userId,
                 nama: name,
                 whatsapp: normalizedPhone,
                 pin: pin,
                 tanggal_daftar: today,
                 status: 'aktif',
-
                 total_points: 0,
                 created_at: now
-            })
+            }
         });
         
-        if (!createResponse.ok) {
+        if (!createResult.created || createResult.created < 1) {
             throw new Error('Gagal mendaftar');
         }
         
@@ -1041,18 +1040,14 @@ document.getElementById('edit-profile-form').addEventListener('submit', async (e
             updateData.pin = newPin;
         }
         
-        const updateResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                action: 'update',
-                sheet: 'users',
-                id: user.id,
-                data: updateData
-            })
+        const updateResult = await apiPost(apiUrl, {
+            action: 'update',
+            sheet: 'users',
+            id: user.id,
+            data: updateData
         });
         
-        if (!updateResponse.ok) {
+        if (!updateResult.affected || updateResult.affected < 1) {
             throw new Error('Failed to update');
         }
         
