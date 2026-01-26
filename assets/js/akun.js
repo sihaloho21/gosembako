@@ -1011,8 +1011,8 @@ document.getElementById('edit-profile-form').addEventListener('submit', async (e
         const apiUrl = CONFIG.getMainApiUrl();
         
         // Fetch current user data to verify old PIN
-        const response = await fetch(`${apiUrl}?sheet=users&id=${user.id}`);
-        const users = await response.json();
+        const response = await fetch(`${apiUrl}?sheet=users&action=search&id=${user.id}`);
+        const users = parseSheetResponse(await response.json());
         
         if (!users || users.length === 0) {
             throw new Error('User not found');
@@ -1260,16 +1260,22 @@ async function loadClaimsHistory() {
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         
-        // Fetch claims by phone from claims sheet
+        // Fetch all claims and filter locally by phone
         const variants = phoneLookupVariants(user.whatsapp);
-        const phoneQuery = variants.map(v => `phone=${encodeURIComponent(v)}`).join('&');
-        const response = await fetch(`${apiUrl}?sheet=claims&${phoneQuery}`);
+        const normalizedVariants = variants.map(v => normalizePhoneTo08(v)).filter(Boolean);
+        const response = await fetch(`${apiUrl}?sheet=claims`);
         
         if (!response.ok) {
             throw new Error('Failed to fetch claims');
         }
         
-        const claimsData = parseSheetResponse(await response.json());
+        const allClaims = parseSheetResponse(await response.json());
+        
+        // Filter locally by phone variants
+        const claimsData = allClaims.filter(claim => {
+            const claimPhone = normalizePhoneTo08(claim.phone || claim.whatsapp || '');
+            return normalizedVariants.includes(claimPhone);
+        });
         
         // Hide loading
         loadingDiv.classList.add('hidden');
