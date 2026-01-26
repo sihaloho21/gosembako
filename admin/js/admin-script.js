@@ -198,7 +198,7 @@ async function updateOrderStatus(id, newStatus) {
 
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: 'update',
                 sheet: ORDERS_SHEET,
@@ -222,7 +222,7 @@ async function updateOrderStatus(id, newStatus) {
                         const currentPoints = parseFloat(userData[0].points) || 0;
                         const updateRes = await fetch(API_URL, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'text/plain' },
                             body: JSON.stringify({ 
                                 action: 'update',
                                 sheet: 'user_points',
@@ -237,7 +237,7 @@ async function updateOrderStatus(id, newStatus) {
                     } else {
                         const createRes = await fetch(API_URL, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'text/plain' },
                             body: JSON.stringify({ 
                                 action: 'create',
                                 sheet: 'user_points',
@@ -255,7 +255,7 @@ async function updateOrderStatus(id, newStatus) {
                     if (pointUpdateSuccess) {
                         await fetch(API_URL, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'text/plain' },
                             body: JSON.stringify({ 
                                 action: 'update',
                                 sheet: ORDERS_SHEET,
@@ -338,7 +338,7 @@ async function handleEditCategory(id, nama, deskripsi) {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: 'update',
                 sheet: CATEGORIES_SHEET,
@@ -362,7 +362,7 @@ async function handleDeleteCategory(id) {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: 'delete',
                 sheet: CATEGORIES_SHEET,
@@ -508,7 +508,7 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
         
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: action,
                 sheet: PRODUCTS_SHEET,
@@ -537,7 +537,7 @@ async function handleDelete(id) {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: 'delete',
                 sheet: PRODUCTS_SHEET,
@@ -568,7 +568,7 @@ document.getElementById('category-form').addEventListener('submit', async (e) =>
     try {
         const response = await fetch(`${API_URL}?sheet=${CATEGORIES_SHEET}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ data: { id: Date.now().toString(), nama, deskripsi } })
         });
         const result = await response.json();
@@ -667,7 +667,7 @@ async function handleDeleteTukarPoin(id) {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: 'delete',
                 sheet: TUKAR_POIN_SHEET,
@@ -719,7 +719,7 @@ document.getElementById('tukar-poin-form').addEventListener('submit', async (e) 
         
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: action,
                 sheet: TUKAR_POIN_SHEET,
@@ -786,7 +786,7 @@ async function editUserPoints(phone, currentPoints) {
         
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: 'update',
                 sheet: 'user_points',
