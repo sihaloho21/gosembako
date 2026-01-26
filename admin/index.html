@@ -753,29 +753,7 @@
     <script src="js/tiered-pricing.min.js"></script>
     <script src="js/banner-management.min.js"></script>
     
-    <script>
-        // Lazy load bootstrap API settings on first user interaction
-        let settingsFetchedOnce = false;
-        
-        const lazyFetchSettings = async () => {
-            if (!settingsFetchedOnce) {
-                settingsFetchedOnce = true;
-                await CONFIG.fetchSettings();
-                // Start monitoring for API changes (event-based trigger only, no interval)
-                CONFIG.startApiChangeMonitoring(0);
-            }
-        };
-        
-        // Trigger on first user interaction
-        ['click', 'scroll', 'keydown', 'touchstart'].forEach(event => {
-            document.addEventListener(event, lazyFetchSettings, { once: true });
-        });
-        
-        // Also trigger on page visibility change (tab focus)
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) lazyFetchSettings();
-        });
-    </script>
+
     <!-- Toast Container -->
     <div id="admin-toast-container" class="fixed bottom-8 right-8 z-[100] flex flex-col gap-3"></div>
 <script src="js/mobile-menu.min.js"></script>
