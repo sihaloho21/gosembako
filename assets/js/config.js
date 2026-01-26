@@ -9,7 +9,7 @@ const CONFIG = {
     DEFAULTS: {
         MAIN_API: 'https://script.google.com/macros/s/AKfycbwDmh_cc-J9c0cuzcSThFQBdiZ7lpy3oUjDENZhHW-4UszuKwPB20g6OeRccVsgvp79hw/exec',
         ADMIN_API: 'https://script.google.com/macros/s/AKfycbwDmh_cc-J9c0cuzcSThFQBdiZ7lpy3oUjDENZhHW-4UszuKwPB20g6OeRccVsgvp79hw/exec',
-        VERSION: '4.2.0' // Updated: GAS v4.2 with form-data support (no CORS preflight)
+        VERSION: '4.2' // GAS v4.2: action-based API (POST body as form-data with 'json' key)
     },
     
     // Storage keys
