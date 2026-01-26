@@ -318,14 +318,15 @@ async function loadOrderHistory(user) {
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         
-        // Fetch orders by phone column from existing orders sheet
-        let response = await fetch(`${apiUrl}?sheet=orders&phone=${user.whatsapp}`);
+        // Fetch all orders and filter by phone on client-side
+        let response = await fetch(`${apiUrl}?sheet=orders`);
         
         if (!response.ok) {
             throw new Error('Gagal memuat riwayat pesanan');
         }
         
-        let orders = await response.json();
+        let allOrders = await response.json();
+        let orders = Array.isArray(allOrders) ? allOrders.filter(o => normalizePhoneTo08(o.phone) === normalizePhoneTo08(user.whatsapp)) : [];
         
         // Hide loading
         loadingDiv.classList.add('hidden');
@@ -781,24 +782,23 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         
         console.log('🔍 Checking phone formats:', phonesToCheck);
         
-        for (const phoneToCheck of phonesToCheck) {
-            try {
-                const checkResponse = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(phoneToCheck)}${cacheBuster}`);
-                if (!checkResponse.ok) {
-                    console.warn(`API error for ${phoneToCheck}: ${checkResponse.status}`);
-                    continue;
-                }
+        try {
+            const checkResponse = await fetch(`${apiUrl}?sheet=users${cacheBuster}`);
+            if (!checkResponse.ok) {
+                console.warn(`API error: ${checkResponse.status}`);
+            } else {
                 const data = await checkResponse.json();
-                existingUsers = parseSheetResponse(data)
-                    .filter(u => normalizePhoneTo08(u.whatsapp || u.phone || '') === normalizedPhone);
+                const allUsers = parseSheetResponse(data);
+                existingUsers = allUsers.filter(u => {
+                    const userPhone = normalizePhoneTo08(u.whatsapp || u.phone || '');
+                    return phonesToCheck.some(p => normalizePhoneTo08(p) === userPhone);
+                });
                 if (existingUsers && existingUsers.length > 0) {
-                    console.log(`📊 Found existing user with format [${phoneToCheck}]:`, existingUsers);
-                    break;
+                    console.log(`📊 Found existing user:`, existingUsers);
                 }
-            } catch (err) {
-                console.warn(`Check failed for ${phoneToCheck}:`, err.message);
-                continue;
             }
+        } catch (err) {
+            console.warn(`Check failed:`, err.message);
         }
         
         console.log('📊 Final check result for', whatsapp, ':', existingUsers);
@@ -892,8 +892,9 @@ document.getElementById('forgot-pin-form').addEventListener('submit', async (e) 
     
     try {
         const apiUrl = CONFIG.getMainApiUrl();
-        const response = await fetch(`${apiUrl}?sheet=users&whatsapp=${normalizedPhone}`);
-        const users = parseSheetResponse(await response.json());
+        const response = await fetch(`${apiUrl}?sheet=users`);
+        const allUsers = parseSheetResponse(await response.json());
+        const users = allUsers.filter(u => normalizePhoneTo08(u.whatsapp || u.phone || '') === normalizedPhone);
         
         if (!users || users.length === 0) {
             errorText.textContent = 'Nomor WhatsApp tidak terdaftar';
@@ -1040,10 +1041,15 @@ document.getElementById('edit-profile-form').addEventListener('submit', async (e
             updateData.pin = newPin;
         }
         
-        const updateResponse = await fetch(`${apiUrl}/id/${user.id}?sheet=users`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updateData)
+        const updateResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+                action: 'update',
+                sheet: 'users',
+                id: user.id,
+                data: updateData
+            })
         });
         
         if (!updateResponse.ok) {
@@ -1391,14 +1397,15 @@ async function loadModalPoints() {
     
     try {
         const apiUrl = CONFIG.getMainApiUrl();
-        const response = await fetch(`${apiUrl}?sheet=user_points&phone=${user.whatsapp}`);
+        const response = await fetch(`${apiUrl}?sheet=user_points`);
         
         if (!response.ok) {
             document.getElementById('loyalty-modal-points').textContent = '0';
             return;
         }
         
-        const pointsData = await response.json();
+        const allPoints = await response.json();
+        const pointsData = Array.isArray(allPoints) ? allPoints.filter(p => normalizePhoneTo08(p.phone) === normalizePhoneTo08(user.whatsapp)) : [];
         
         if (pointsData && pointsData.length > 0) {
             const userPoints = pointsData[0];

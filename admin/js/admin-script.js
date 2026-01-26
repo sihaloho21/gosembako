@@ -214,8 +214,9 @@ async function updateOrderStatus(id, newStatus) {
                     const pointsToAdd = parseFloat(order.poin) || 0;
                     const phone = normalizePhone(order.phone);
                     
-                    const userRes = await fetch(`${API_URL}/search?sheet=user_points&phone=${phone}`);
-                    const userData = await userRes.json();
+                    const userRes = await fetch(`${API_URL}?sheet=user_points`);
+                    const allUsers = await userRes.json();
+                    const userData = Array.isArray(allUsers) ? allUsers.filter(u => normalizePhone(u.phone) === phone) : [];
                     
                     let pointUpdateSuccess = false;
                     if (Array.isArray(userData) && userData.length > 0) {

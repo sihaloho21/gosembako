@@ -9,7 +9,7 @@ const CONFIG = {
     DEFAULTS: {
         MAIN_API: 'https://script.google.com/macros/s/AKfycbz6cYVH-5An9PjLyMkSBsDC1kGFfeSXS3zFR8mZnHZZ2_-vo6eSDLk6JcxOqJ2xU6k74w/exec',
         ADMIN_API: 'https://script.google.com/macros/s/AKfycbz6cYVH-5An9PjLyMkSBsDC1kGFfeSXS3zFR8mZnHZZ2_-vo6eSDLk6JcxOqJ2xU6k74w/exec',
-        VERSION: '1.0.0'
+        VERSION: '1.1.0' // Updated: API contract aligned with GAS 4.1
     },
     
     // Storage keys

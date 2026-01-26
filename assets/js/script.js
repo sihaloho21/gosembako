@@ -1618,7 +1618,7 @@ async function claimReward(rewardId) {
 
     try {
         // 1. Get reward details to know the required points
-        const rewardData = await ApiService.get(`/search?sheet=tukar_poin&id=${rewardId}`, {
+        const rewardData = await ApiService.get(`?sheet=tukar_poin&action=search&id=${rewardId}`, {
             cache: false // Don't cache search results
         });
         
@@ -1720,7 +1720,7 @@ async function showConfirmTukarModal(rewardId) {
 
     try {
         // Fetch reward details
-        const rewardData = await ApiService.get(`/search?sheet=tukar_poin&id=${rewardId}`, {
+        const rewardData = await ApiService.get(`?sheet=tukar_poin&action=search&id=${rewardId}`, {
             cache: false
         });
         
@@ -1835,7 +1835,7 @@ async function processClaimReward(rewardId, customerName) {
     
     try {
         // 1. Get reward details
-        const rewardData = await ApiService.get(`/search?sheet=tukar_poin&id=${rewardId}`, {
+        const rewardData = await ApiService.get(`?sheet=tukar_poin&action=search&id=${rewardId}`, {
             cache: false
         });
         
