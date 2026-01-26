@@ -7,8 +7,8 @@
 const CONFIG = {
     // Default API URLs (Fallback)
     DEFAULTS: {
-        MAIN_API: 'https://script.google.com/macros/s/AKfycbz6cYVH-5An9PjLyMkSBsDC1kGFfeSXS3zFR8mZnHZZ2_-vo6eSDLk6JcxOqJ2xU6k74w/exec',
-        ADMIN_API: 'https://script.google.com/macros/s/AKfycbz6cYVH-5An9PjLyMkSBsDC1kGFfeSXS3zFR8mZnHZZ2_-vo6eSDLk6JcxOqJ2xU6k74w/exec',
+        MAIN_API: 'https://script.google.com/macros/s/AKfycbwDmh_cc-J9c0cuzcSThFQBdiZ7lpy3oUjDENZhHW-4UszuKwPB20g6OeRccVsgvp79hw/exec',
+        ADMIN_API: 'https://script.google.com/macros/s/AKfycbwDmh_cc-J9c0cuzcSThFQBdiZ7lpy3oUjDENZhHW-4UszuKwPB20g6OeRccVsgvp79hw/exec',
         VERSION: '1.1.0' // Updated: API contract aligned with GAS 4.1
     },
     
