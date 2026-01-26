@@ -123,17 +123,22 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         const variants = phoneLookupVariants(normalizedPhone);
         let foundUser = null;
         
-        for (const phone of variants) {
-            const resp = await fetch(`${apiUrl}?sheet=users&whatsapp=${encodeURIComponent(phone)}${cacheBuster}`);
-            if (!resp.ok) continue;
-            const data = await resp.json();
-            const users = parseSheetResponse(data);
-            if (users && users.length > 0) {
-                const candidate = users.find(u => normalizePhoneTo08(u.whatsapp || u.phone || '') === normalizePhoneTo08(phone));
-                if (candidate) {
-                    foundUser = candidate;
-                    break;
-                }
+        // Fetch all users and filter locally
+        const resp = await fetch(`${apiUrl}?sheet=users${cacheBuster}`);
+        if (!resp.ok) {
+            showError('Gagal menghubungi server. Silakan coba lagi.');
+            resetLoginButton();
+            return;
+        }
+        const data = await resp.json();
+        const users = parseSheetResponse(data);
+        
+        // Filter by normalized phone variants
+        for (const variant of variants) {
+            const candidate = users.find(u => normalizePhoneTo08(u.whatsapp || u.phone || '') === normalizePhoneTo08(variant));
+            if (candidate) {
+                foundUser = candidate;
+                break;
             }
         }
         

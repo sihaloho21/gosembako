@@ -9,7 +9,7 @@ const CONFIG = {
     DEFAULTS: {
         MAIN_API: 'https://script.google.com/macros/s/AKfycbyg4gZb2KX2nl3mxPQT1MQksiUaguk5GOyQasE2XuAVPMzogdXTKUEXelWVv9jNfvYMPA/exec',
         ADMIN_API: 'https://script.google.com/macros/s/AKfycbyg4gZb2KX2nl3mxPQT1MQksiUaguk5GOyQasE2XuAVPMzogdXTKUEXelWVv9jNfvYMPA/exec',
-        VERSION: '1.0.1'
+        VERSION: '1.0.0'
     },
     
     // Storage keys
