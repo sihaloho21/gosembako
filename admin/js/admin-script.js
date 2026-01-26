@@ -196,10 +196,15 @@ async function updateOrderStatus(id, newStatus) {
             return;
         }
 
-        const response = await fetch(`${API_URL}/id/${id}?sheet=${ORDERS_SHEET}`, {
-            method: 'PATCH',
+        const response = await fetch(API_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: { status: newStatus } })
+            body: JSON.stringify({ 
+                action: 'update',
+                sheet: ORDERS_SHEET,
+                id: id,
+                data: { status: newStatus } 
+            })
         });
         const result = await response.json();
         
@@ -215,10 +220,13 @@ async function updateOrderStatus(id, newStatus) {
                     let pointUpdateSuccess = false;
                     if (Array.isArray(userData) && userData.length > 0) {
                         const currentPoints = parseFloat(userData[0].points) || 0;
-                        const updateRes = await fetch(`${API_URL}/phone/${phone}?sheet=user_points`, {
-                            method: 'PATCH',
+                        const updateRes = await fetch(API_URL, {
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
+                                action: 'update',
+                                sheet: 'user_points',
+                                id: userData[0].id,
                                 data: { 
                                     points: currentPoints + pointsToAdd,
                                     last_updated: new Date().toLocaleString('id-ID')
@@ -227,11 +235,14 @@ async function updateOrderStatus(id, newStatus) {
                         });
                         if (updateRes.ok) pointUpdateSuccess = true;
                     } else {
-                        const createRes = await fetch(`${API_URL}?sheet=user_points`, {
+                        const createRes = await fetch(API_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
+                                action: 'create',
+                                sheet: 'user_points',
                                 data: { 
+                                    id: Date.now().toString(),
                                     phone: phone,
                                     points: pointsToAdd,
                                     last_updated: new Date().toLocaleString('id-ID')
@@ -242,10 +253,15 @@ async function updateOrderStatus(id, newStatus) {
                     }
 
                     if (pointUpdateSuccess) {
-                        await fetch(`${API_URL}/id/${id}?sheet=${ORDERS_SHEET}`, {
-                            method: 'PATCH',
+                        await fetch(API_URL, {
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body:JSON.stringify({ data: { point_processed: 'Yes' } })
+                            body: JSON.stringify({ 
+                                action: 'update',
+                                sheet: ORDERS_SHEET,
+                                id: id,
+                                data: { point_processed: 'Yes' } 
+                            })
                         });
                         
 
@@ -320,10 +336,15 @@ function openEditCategory(id, nama, deskripsi) {
 
 async function handleEditCategory(id, nama, deskripsi) {
     try {
-        const response = await fetch(`${API_URL}/id/${id}?sheet=${CATEGORIES_SHEET}`, {
-            method: 'PATCH',
+        const response = await fetch(API_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: { nama, deskripsi } })
+            body: JSON.stringify({ 
+                action: 'update',
+                sheet: CATEGORIES_SHEET,
+                id: id,
+                data: { nama, deskripsi } 
+            })
         });
         const result = await response.json();
         if (result.affected > 0) {
@@ -339,8 +360,14 @@ async function handleEditCategory(id, nama, deskripsi) {
 async function handleDeleteCategory(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus kategori ini?')) return;
     try {
-        const response = await fetch(`${API_URL}/id/${id}?sheet=${CATEGORIES_SHEET}`, {
-            method: 'DELETE'
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'delete',
+                sheet: CATEGORIES_SHEET,
+                id: id
+            })
         });
         const result = await response.json();
         if (result.deleted > 0) {
@@ -476,21 +503,19 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
     };
 
     try {
-        let response;
-        if (id) {
-            response = await fetch(`${API_URL}/id/${id}?sheet=${PRODUCTS_SHEET}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: data })
-            });
-        } else {
-            const newId = Date.now().toString();
-            response = await fetch(`${API_URL}?sheet=${PRODUCTS_SHEET}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: { ...data, id: newId } })
-            });
-        }
+        const action = id ? 'update' : 'create';
+        const productId = id || Date.now().toString();
+        
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: action,
+                sheet: PRODUCTS_SHEET,
+                id: productId,
+                data: id ? data : { ...data, id: productId }
+            })
+        });
 
         const result = await response.json();
         if (result.affected > 0 || result.created > 0) {
@@ -510,8 +535,14 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
 async function handleDelete(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
     try {
-        const response = await fetch(`${API_URL}/id/${id}?sheet=${PRODUCTS_SHEET}`, {
-            method: 'DELETE'
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'delete',
+                sheet: PRODUCTS_SHEET,
+                id: id
+            })
         });
         const result = await response.json();
         if (result.deleted > 0) {
@@ -634,8 +665,14 @@ async function handleDeleteTukarPoin(id) {
     if (!confirm('Apakah Anda yakin ingin menghapus produk tukar poin ini?')) return;
     
     try {
-        const response = await fetch(`${API_URL}/id/${id}?sheet=${TUKAR_POIN_SHEET}`, {
-            method: 'DELETE'
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'delete',
+                sheet: TUKAR_POIN_SHEET,
+                id: id
+            })
         });
         const result = await response.json();
         if (result.deleted > 0) {
@@ -677,23 +714,19 @@ document.getElementById('tukar-poin-form').addEventListener('submit', async (e) 
             deskripsi
         };
         
-        let response;
-        if (id) {
-            // Edit existing product
-            response = await fetch(`${API_URL}/id/${id}?sheet=${TUKAR_POIN_SHEET}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data })
-            });
-        } else {
-            // Add new product
-            data.id = Date.now().toString();
-            response = await fetch(`${API_URL}?sheet=${TUKAR_POIN_SHEET}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [data] })
-            });
-        }
+        const action = id ? 'update' : 'create';
+        const productId = id || Date.now().toString();
+        
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: action,
+                sheet: TUKAR_POIN_SHEET,
+                id: productId,
+                data: id ? data : { ...data, id: productId }
+            })
+        });
         
         const result = await response.json();
         if (result.created > 0 || result.affected > 0 || response.ok) {
@@ -741,10 +774,23 @@ async function editUserPoints(phone, currentPoints) {
     if (newPoints === null || newPoints === "") return;
     
     try {
-        const response = await fetch(`${API_URL}/phone/${phone}?sheet=user_points`, {
-            method: 'PATCH',
+        // First, get the user data to find the ID
+        const searchRes = await fetch(`${API_URL}?sheet=user_points`);
+        const allUsers = await searchRes.json();
+        const user = allUsers.find(u => u.phone === phone);
+        
+        if (!user || !user.id) {
+            showAdminToast('User tidak ditemukan!', 'error');
+            return;
+        }
+        
+        const response = await fetch(API_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
+                action: 'update',
+                sheet: 'user_points',
+                id: user.id,
                 data: { 
                     points: parseFloat(newPoints),
                     last_updated: new Date().toLocaleString('id-ID')
@@ -752,7 +798,7 @@ async function editUserPoints(phone, currentPoints) {
             })
         });
         const result = await response.json();
-        if (result.affected > 0) {
+        if (result.affected > 0 || response.ok) {
             showAdminToast('Saldo poin diperbarui!', 'success');
             fetchUserPoints();
         }
