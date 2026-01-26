@@ -7,8 +7,8 @@
 const CONFIG = {
     // Default API URLs (Fallback)
     DEFAULTS: {
-        MAIN_API: 'https://script.google.com/macros/s/AKfycbzD-G8Kumcn1OlHwlfk_ZZZEKCKDW5DV8hYZgRKb92sHPNis3EoJSq-XATU_7YpLfsTWg/exec',
-        ADMIN_API: 'https://script.google.com/macros/s/AKfycbzD-G8Kumcn1OlHwlfk_ZZZEKCKDW5DV8hYZgRKb92sHPNis3EoJSq-XATU_7YpLfsTWg/exec',
+        MAIN_API: 'https://script.google.com/macros/s/AKfycbz6cYVH-5An9PjLyMkSBsDC1kGFfeSXS3zFR8mZnHZZ2_-vo6eSDLk6JcxOqJ2xU6k74w/exec',
+        ADMIN_API: 'https://script.google.com/macros/s/AKfycbz6cYVH-5An9PjLyMkSBsDC1kGFfeSXS3zFR8mZnHZZ2_-vo6eSDLk6JcxOqJ2xU6k74w/exec',
         VERSION: '1.0.0'
     },
     
