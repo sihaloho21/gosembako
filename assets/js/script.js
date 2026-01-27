@@ -1428,20 +1428,7 @@ function sendToWA() {
     ApiService.post('?sheet=orders', { data: [orderData] })
         .then(data => {
             console.log('Order logged to spreadsheet:', data);
-            
-            if (orderData.user_id) {
-                try {
-                    apiPost(API_URL, {
-                        action: 'track_order_referral',
-                        user_id: orderData.user_id
-                    }).catch(err => {
-                        console.warn('Error tracking referral order:', err);
-                    });
-                } catch (error) {
-                    console.warn('Error tracking referral order:', error);
-                }
-            }
-
+            // ✅ Referral tracking moved to admin panel (when status = "Terima")
         })
         .catch(err => {
             console.error('Error logging order:', err);
