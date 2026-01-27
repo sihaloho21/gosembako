@@ -35,7 +35,6 @@ function showSection(sectionId) {
         banners: 'Banner Promosi',
         'user-points': 'Poin Pengguna',
         'tiered-pricing': 'Harga Grosir Bertingkat',
-        referral: 'Referral Program',
         pengaturan: 'Pengaturan'
     };
     document.getElementById('section-title').innerText = titles[sectionId];
@@ -47,7 +46,6 @@ function showSection(sectionId) {
     if (sectionId === 'banners') fetchBanners();
     if (sectionId === 'user-points') fetchUserPoints();
     if (sectionId === 'tiered-pricing') fetchTieredPricingProducts();
-    if (sectionId === 'referral') fetchReferralAnalytics();
     if (sectionId === 'dashboard') {
         updateDashboardStats();
         loadStoreStatus();
@@ -174,97 +172,6 @@ function renderOrderTable() {
     `).join('');
 }
 
-async function fetchReferralAnalytics() {
-    try {
-        const response = await fetch(`${API_URL}?action=get_referral_analytics`);
-        const data = await response.json();
-        
-        if (!data || data.error) {
-            console.warn('Referral analytics error:', data && data.error);
-            return;
-        }
-        
-        document.getElementById('admin-total-referrals').textContent = data.total_referrals || 0;
-        document.getElementById('admin-active-referrers').textContent = data.active_referrers || 0;
-        document.getElementById('admin-points-distributed').textContent = data.points_distributed || 0;
-        document.getElementById('admin-conversion-rate').textContent = (data.conversion_rate || 0) + '%';
-        
-        const topReferrersBody = document.getElementById('admin-top-referrers');
-        if (topReferrersBody) {
-            topReferrersBody.innerHTML = '';
-            (data.top_referrers || []).forEach((user, index) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-6 py-4 text-sm text-gray-600">${index + 1}</td>
-                    <td class="px-6 py-4 text-sm font-semibold text-gray-800">${user.nama || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${user.referral_code || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${user.referral_count || 0}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${user.referral_points_earned || 0}</td>
-                `;
-                topReferrersBody.appendChild(tr);
-            });
-            if ((data.top_referrers || []).length === 0) {
-                topReferrersBody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Belum ada data referral.</td></tr>';
-            }
-        }
-        
-        const historyBody = document.getElementById('admin-referral-history');
-        if (historyBody) {
-            historyBody.innerHTML = '';
-            (data.recent_referrals || []).forEach(ref => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-6 py-4 text-sm text-gray-600">${ref.created_at || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-800">${ref.referrer_name || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${ref.referee_name || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${ref.event_type || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">+${ref.referrer_reward || 0}</td>
-                `;
-                historyBody.appendChild(tr);
-            });
-            if ((data.recent_referrals || []).length === 0) {
-                historyBody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Belum ada aktivitas referral.</td></tr>';
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching referral analytics:', error);
-    }
-}
-
-function bindReferralSettingsForm() {
-    const referralForm = document.getElementById('admin-referral-settings-form');
-    if (!referralForm) return;
-
-    referralForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        
-        const payload = {
-            action: 'update_referral_settings',
-            data: {
-                referrer_registration_reward: document.getElementById('setting-referrer-registration')?.value || '100',
-                referee_registration_bonus: document.getElementById('setting-referee-registration')?.value || '50',
-                referrer_first_order_reward: document.getElementById('setting-first-order')?.value || '50',
-                referrer_fifth_order_reward: document.getElementById('setting-fifth-order')?.value || '200',
-                milestone_10_referrals_reward: document.getElementById('setting-milestone-10')?.value || '500',
-                milestone_20_referrals_reward: document.getElementById('setting-milestone-20')?.value || '1000',
-                milestone_50_referrals_reward: document.getElementById('setting-milestone-50')?.value || '3000'
-            }
-        };
-        
-        try {
-            const result = await apiPost(API_URL, payload);
-            if (result && !result.error) {
-                showAdminToast('Pengaturan referral tersimpan!', 'success');
-            } else {
-                showAdminToast('Gagal menyimpan pengaturan referral.', 'error');
-            }
-        } catch (error) {
-            console.error('Error saving referral settings:', error);
-            showAdminToast('Gagal menyimpan pengaturan referral.', 'error');
-        }
-    });
-}
-
 function normalizePhone(phone) {
     if (!phone) return '';
     let p = phone.toString().replace(/[^0-9]/g, '');
@@ -275,8 +182,6 @@ function normalizePhone(phone) {
 }
 
 
-
-// ✅ UPDATED: Added referral tracking for order completion
 async function updateOrderStatus(id, newStatus) {
     if (!newStatus) return;
     
@@ -299,20 +204,6 @@ async function updateOrderStatus(id, newStatus) {
         });
         
         if (result.affected > 0) {
-            // ✅ NEW: Track referral when order is completed (status = "Terima")
-            if (newStatus === 'Terima' && order.user_id) {
-                try {
-                    await apiPost(API_URL, {
-                        action: 'track_order_referral',
-                        user_id: order.user_id
-                    });
-                    console.log('✅ Referral tracked for order:', id, 'user:', order.user_id);
-                } catch (referralError) {
-                    console.error('⚠️ Error tracking referral:', referralError);
-                    // Don't fail the order update if referral tracking fails
-                }
-            }
-            
             if (newStatus === 'Terima' && order.point_processed !== 'Yes') {
                 if (order.phone && order.poin) {
                     const pointsToAdd = parseFloat(order.poin) || 0;
@@ -357,6 +248,8 @@ async function updateOrderStatus(id, newStatus) {
                             data: { point_processed: 'Yes' } 
                         });
                         
+
+                        
                         showAdminToast(`Status diperbarui & +${pointsToAdd} poin diberikan ke ${phone}`, 'success');
                     } else {
                         showAdminToast('Status diperbarui, tapi gagal update poin.', 'warning');
@@ -383,7 +276,6 @@ async function updateOrderStatus(id, newStatus) {
         selectElement.disabled = false;
     }
 }
-
 
 // ============ CATEGORY FUNCTIONS ============
 async function fetchCategories() {
@@ -1086,7 +978,6 @@ function showAdminToast(message, type = 'info') {
 // ============ INITIALIZATION ============
 document.addEventListener('DOMContentLoaded', () => {
     showSection('dashboard');
-    bindReferralSettingsForm();
 
 });
 

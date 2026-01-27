@@ -1411,24 +1411,14 @@ function sendToWA() {
         poin: pointsEarned,
         point_processed: 'No'
     };
-    const loggedInUser = localStorage.getItem('gosembako_user');
-    if (loggedInUser) {
-        try {
-            const parsedUser = JSON.parse(loggedInUser);
-            if (parsedUser && parsedUser.id) {
-                orderData.user_id = parsedUser.id;
-            }
-        } catch (error) {
-            console.warn('Failed to read logged in user for referral tracking:', error);
-        }
-    }
 
     // Use ApiService to log order (no caching for POST)
     // SheetDB requires data to be wrapped in {data: [...]}
     ApiService.post('?sheet=orders', { data: [orderData] })
         .then(data => {
             console.log('Order logged to spreadsheet:', data);
-            // ✅ Referral tracking moved to admin panel (when status = "Terima")
+            
+
         })
         .catch(err => {
             console.error('Error logging order:', err);

@@ -41,8 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show login form
         showLogin();
     }
-
-    initReferralRegistration();
 });
 
 /**
@@ -73,11 +71,6 @@ function showDashboard(user) {
     
     // Load order history
     loadOrderHistory(user);
-    
-    // Initialize referral widget
-    if (typeof ReferralUI !== 'undefined' && ReferralUI.initReferralWidget) {
-        ReferralUI.initReferralWidget(user);
-    }
 }
 
 /**
@@ -675,8 +668,6 @@ function showRegister() {
     document.getElementById('register-section').classList.remove('hidden');
     document.getElementById('forgot-pin-section').classList.add('hidden');
     document.getElementById('dashboard-section').classList.add('hidden');
-
-    initReferralRegistration();
 }
 
 /**
@@ -699,7 +690,6 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     const whatsapp = document.getElementById('register-whatsapp').value.trim();
     const pin = document.getElementById('register-pin').value.trim();
     const pinConfirm = document.getElementById('register-pin-confirm').value.trim();
-    const referralCode = (sessionStorage.getItem('referral_code') || '').trim().toUpperCase();
     
     const errorDiv = document.getElementById('register-error');
     const errorText = document.getElementById('register-error-text');
@@ -833,64 +823,33 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             second: '2-digit'
         });
         
-    // Create new user
-    const userData = {
-        id: userId,
-        nama: name,
-        whatsapp: normalizedPhone,
-        pin: pin,
-        tanggal_daftar: today,
-        status: 'aktif',
-        total_points: referralCode ? 50 : 0,  // Bonus 50 poin jika daftar dengan referral
-        created_at: now
-    };
-    
-    // Add referred_by if referral code found (auto-detected)
-    if (referralCode) {
-        userData.referred_by = referralCode;
-    }
-    
-    const createResult = await apiPost(apiUrl, {
-        action: 'register',
-        data: userData
-    });
-    
-    if (!createResult || !createResult.success) {
-        throw new Error(createResult && createResult.message ? createResult.message : 'Gagal mendaftar');
-    }
-    
-    // Create referral record if user registered with referral code
-    if (referralCode && typeof ReferralUI !== 'undefined' && ReferralUI.createReferralRecord) {
-        try {
-            const recordCreated = await ReferralUI.createReferralRecord(
-                referralCode, 
-                normalizedPhone, 
-                name
-            );
-            if (recordCreated) {
-                console.log('✅ Referral record created');
+
+        
+        // Create new user
+        const createResult = await apiPost(apiUrl, {
+            action: 'create',
+            sheet: 'users',
+            data: {
+                id: userId,
+                nama: name,
+                whatsapp: normalizedPhone,
+                pin: pin,
+                tanggal_daftar: today,
+                status: 'aktif',
+                total_points: 0,
+                created_at: now
             }
-        } catch (error) {
-            console.error('❌ Failed to create referral record:', error);
-            // Don't fail registration if referral record fails
+        });
+        
+        if (!createResult.created || createResult.created < 1) {
+            throw new Error('Gagal mendaftar');
         }
-    }
-    
-    // Show success
-    successDiv.classList.remove('hidden');
-    const successMessage = document.getElementById('register-success-message');
-    if (successMessage && createResult.referral_code) {
-        let message = `Pendaftaran berhasil! Kode referral Anda: ${createResult.referral_code}`;
-        if (createResult.bonus_points && parseInt(createResult.bonus_points) > 0) {
-            message += ` | Bonus: ${createResult.bonus_points} poin`;
-        }
-        successMessage.textContent = message;
-    }
-    sessionStorage.removeItem('referral_code');
-    sessionStorage.removeItem('referrer_name');
-    
-    // Reset form
-    document.getElementById('register-form').reset();
+        
+        // Show success
+        successDiv.classList.remove('hidden');
+        
+        // Reset form
+        document.getElementById('register-form').reset();
         
         // Redirect to login after 2 seconds
         setTimeout(() => {
@@ -906,49 +865,6 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         registerBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg> Daftar';
     }
 });
-
-/**
- * Auto-detect referral code from URL and validate
- */
-async function initReferralRegistration() {
-    const referralInfo = document.getElementById('referral-info');
-    if (!referralInfo) return;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
-
-    if (!refCode) {
-        referralInfo.classList.add('hidden');
-        sessionStorage.removeItem('referral_code');
-        sessionStorage.removeItem('referrer_name');
-        return;
-    }
-
-    const referralCode = refCode.toUpperCase();
-
-    try {
-        const apiUrl = CONFIG.getMainApiUrl();
-        const response = await fetch(`${apiUrl}?action=validate_referral&code=${encodeURIComponent(referralCode)}`);
-        const result = await response.json();
-
-        if (result && result.valid) {
-            const nameEl = document.getElementById('referrer-name');
-            if (nameEl) nameEl.textContent = result.referrer_name || 'Teman Anda';
-            referralInfo.classList.remove('hidden');
-            sessionStorage.setItem('referral_code', referralCode);
-            sessionStorage.setItem('referrer_name', result.referrer_name || '');
-        } else {
-            referralInfo.classList.add('hidden');
-            sessionStorage.removeItem('referral_code');
-            sessionStorage.removeItem('referrer_name');
-        }
-    } catch (error) {
-        console.error('Error validating referral:', error);
-        referralInfo.classList.add('hidden');
-        sessionStorage.removeItem('referral_code');
-        sessionStorage.removeItem('referrer_name');
-    }
-}
 
 /**
  * Handle forgot PIN form submission
