@@ -275,6 +275,8 @@ function normalizePhone(phone) {
 }
 
 
+
+// ✅ UPDATED: Added referral tracking for order completion
 async function updateOrderStatus(id, newStatus) {
     if (!newStatus) return;
     
@@ -297,6 +299,20 @@ async function updateOrderStatus(id, newStatus) {
         });
         
         if (result.affected > 0) {
+            // ✅ NEW: Track referral when order is completed (status = "Terima")
+            if (newStatus === 'Terima' && order.user_id) {
+                try {
+                    await apiPost(API_URL, {
+                        action: 'track_order_referral',
+                        user_id: order.user_id
+                    });
+                    console.log('✅ Referral tracked for order:', id, 'user:', order.user_id);
+                } catch (referralError) {
+                    console.error('⚠️ Error tracking referral:', referralError);
+                    // Don't fail the order update if referral tracking fails
+                }
+            }
+            
             if (newStatus === 'Terima' && order.point_processed !== 'Yes') {
                 if (order.phone && order.poin) {
                     const pointsToAdd = parseFloat(order.poin) || 0;
@@ -341,8 +357,6 @@ async function updateOrderStatus(id, newStatus) {
                             data: { point_processed: 'Yes' } 
                         });
                         
-
-                        
                         showAdminToast(`Status diperbarui & +${pointsToAdd} poin diberikan ke ${phone}`, 'success');
                     } else {
                         showAdminToast('Status diperbarui, tapi gagal update poin.', 'warning');
@@ -369,6 +383,7 @@ async function updateOrderStatus(id, newStatus) {
         selectElement.disabled = false;
     }
 }
+
 
 // ============ CATEGORY FUNCTIONS ============
 async function fetchCategories() {
