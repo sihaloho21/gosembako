@@ -1411,6 +1411,17 @@ function sendToWA() {
         poin: pointsEarned,
         point_processed: 'No'
     };
+    const loggedInUser = localStorage.getItem('gosembako_user');
+    if (loggedInUser) {
+        try {
+            const parsedUser = JSON.parse(loggedInUser);
+            if (parsedUser && parsedUser.id) {
+                orderData.user_id = parsedUser.id;
+            }
+        } catch (error) {
+            console.warn('Failed to read logged in user for referral tracking:', error);
+        }
+    }
 
     // Use ApiService to log order (no caching for POST)
     // SheetDB requires data to be wrapped in {data: [...]}
@@ -1418,6 +1429,18 @@ function sendToWA() {
         .then(data => {
             console.log('Order logged to spreadsheet:', data);
             
+            if (orderData.user_id) {
+                try {
+                    apiPost(API_URL, {
+                        action: 'track_order_referral',
+                        user_id: orderData.user_id
+                    }).catch(err => {
+                        console.warn('Error tracking referral order:', err);
+                    });
+                } catch (error) {
+                    console.warn('Error tracking referral order:', error);
+                }
+            }
 
         })
         .catch(err => {
