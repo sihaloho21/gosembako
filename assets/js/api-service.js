@@ -255,14 +255,18 @@ const ApiService = {
      * POST request helper
      */
     async post(endpoint, data, options = {}) {
+        // ✅ FIX: Use URLSearchParams to avoid CORS preflight
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify(data));
+        
         return this.fetch(endpoint, {
             ...options,
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 ...options.headers
             },
-            body: JSON.stringify(data),
+            body: params,
             cache: false // Don't cache POST requests by default
         });
     },
@@ -271,14 +275,18 @@ const ApiService = {
      * PATCH request helper
      */
     async patch(endpoint, data, options = {}) {
+        // ✅ FIX: Use URLSearchParams to avoid CORS preflight
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify(data));
+        
         return this.fetch(endpoint, {
             ...options,
             method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 ...options.headers
             },
-            body: JSON.stringify(data),
+            body: params,
             cache: false // Don't cache PATCH requests by default
         });
     },
