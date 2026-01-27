@@ -4,7 +4,7 @@
  */
 
 // Constants
-const REFERRAL_REWARD_POINTS = 50;
+const DEFAULT_REFERRAL_REWARD_POINTS = 50;
 
 /**
  * Fetch all referrals from the API
@@ -14,7 +14,7 @@ async function fetchAllReferrals() {
     try {
         const apiUrl = CONFIG.getMainApiUrl();
         const cacheBuster = '&_t=' + Date.now();
-        const response = await fetch(`${apiUrl}?sheet=referrals${cacheBuster}`);
+        const response = await fetch(`${apiUrl}?sheet=referral_history${cacheBuster}`);
         
         if (!response.ok) {
             console.error('Failed to fetch referrals:', response.status);
@@ -40,18 +40,14 @@ async function fetchAllReferrals() {
  * @param {string} phone - User's phone number
  * @returns {string} Generated referral code
  */
-function generateReferralCode(name, phone) {
-    // Extract first 3 letters from name (uppercase)
-    const namePrefix = (name || 'USR').replace(/\s/g, '').substring(0, 3).toUpperCase();
+function generateReferralCode(name) {
+    // Extract first 4 letters from name (uppercase)
+    const namePrefix = (name || 'USR').replace(/\s/g, '').substring(0, 4).toUpperCase();
     
-    // Get last 4 digits of phone
-    const phoneDigits = (phone || '').replace(/[^0-9]/g, '');
-    const phoneSuffix = phoneDigits.slice(-4);
+    // Combine with random 4-digit number
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
     
-    // Combine with random 2-digit number
-    const randomNum = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-    
-    return `${namePrefix}${phoneSuffix}${randomNum}`;
+    return `REF-${namePrefix}${randomNum}`;
 }
 
 /**
@@ -103,9 +99,12 @@ async function ensureReferralCode(user) {
  * @returns {Promise<boolean>} Success status
  */
 async function createReferralRecord(referrerCode, referredPhone, referredName) {
+    if (!referrerCode || !referredName) {
+        return false;
+    }
+    
     try {
         const apiUrl = CONFIG.getMainApiUrl();
-        const now = new Date().toISOString().split('T')[0];
         const timestamp = new Date().toLocaleString('id-ID', {
             year: 'numeric',
             month: '2-digit',
@@ -114,31 +113,23 @@ async function createReferralRecord(referrerCode, referredPhone, referredName) {
             minute: '2-digit',
             second: '2-digit'
         });
-        
-        const recordId = `REF-${Date.now().toString().slice(-8)}`;
-        
+        const recordId = `ref_${Date.now()}`;
         const createResult = await apiPost(apiUrl, {
             action: 'create',
-            sheet: 'referrals',
+            sheet: 'referral_history',
             data: {
                 id: recordId,
                 referrer_code: referrerCode,
-                referred_phone: normalizePhoneTo08(referredPhone),
-                referred_name: referredName,
-                reward_points: REFERRAL_REWARD_POINTS,
-                date: now,
-                timestamp: timestamp,
-                status: 'completed'
+                referee_name: referredName,
+                referee_whatsapp: normalizePhoneTo08(referredPhone),
+                event_type: 'registration',
+                referrer_reward: DEFAULT_REFERRAL_REWARD_POINTS,
+                referee_reward: 0,
+                status: 'completed',
+                created_at: timestamp
             }
         });
-        
-        if (createResult && createResult.created) {
-            console.log('✅ Referral record created:', recordId);
-            return true;
-        } else {
-            console.warn('⚠️ Failed to create referral record');
-            return false;
-        }
+        return !!(createResult && (createResult.created || createResult.updated || createResult.success));
     } catch (error) {
         console.error('Error creating referral record:', error);
         return false;
@@ -155,8 +146,9 @@ function renderReferralList(referrals, userCode, container) {
     if (!container) return;
     
     // Filter referrals for this user
-    const userReferrals = referrals.filter(ref => 
-        ref.referrer_code === userCode
+    const normalizedCode = (userCode || '').toString().toUpperCase();
+    const userReferrals = referrals.filter(ref =>
+        (ref.referrer_code || '').toString().toUpperCase() === normalizedCode
     );
     
     if (userReferrals.length === 0) {
@@ -173,32 +165,43 @@ function renderReferralList(referrals, userCode, container) {
     }
     
     // Sort by date (newest first)
-    userReferrals.sort((a, b) => {
-        const dateA = new Date(a.timestamp || a.date || 0);
-        const dateB = new Date(b.timestamp || b.date || 0);
-        return dateB - dateA;
-    });
+        userReferrals.sort((a, b) => {
+            const dateA = new Date(a.created_at || a.timestamp || a.date || 0);
+            const dateB = new Date(b.created_at || b.timestamp || b.date || 0);
+            return dateB - dateA;
+        });
     
     // Render referral list
     let html = '<div class="space-y-2">';
     
     userReferrals.forEach(ref => {
-        const date = new Date(ref.date || ref.timestamp);
+        const date = new Date(ref.created_at || ref.date || ref.timestamp);
         const dateStr = date.toLocaleDateString('id-ID', {
             day: 'numeric',
             month: 'short',
             year: 'numeric'
         });
+
+        const eventLabel = {
+            registration: '📝 Registrasi',
+            first_order: '🛒 Order Pertama',
+            fifth_order: '🎉 Order ke-5',
+            milestone_10: '🏆 Milestone 10',
+            milestone_20: '🏆 Milestone 20',
+            milestone_50: '🏆 Milestone 50'
+        };
+        const eventText = eventLabel[ref.event_type] || ref.event_type || 'Referral';
+        const rewardPoints = parseInt(ref.referrer_reward || ref.reward_points || DEFAULT_REFERRAL_REWARD_POINTS) || DEFAULT_REFERRAL_REWARD_POINTS;
         
         html += `
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <div class="flex-1">
-                    <p class="font-semibold text-gray-800 text-sm">${ref.referred_name || 'Pengguna Baru'}</p>
-                    <p class="text-xs text-gray-500">${dateStr}</p>
+                    <p class="font-semibold text-gray-800 text-sm">${ref.referee_name || ref.referred_name || 'Pengguna Baru'}</p>
+                    <p class="text-xs text-gray-500">${eventText} • ${dateStr}</p>
                 </div>
                 <div class="text-right">
                     <span class="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                        +${ref.reward_points || REFERRAL_REWARD_POINTS} poin
+                        +${rewardPoints} poin
                     </span>
                 </div>
             </div>
@@ -253,7 +256,8 @@ async function initReferralWidget(user) {
         const shareBtn = document.getElementById('share-referral-code');
         if (shareBtn) {
             shareBtn.onclick = () => {
-                const message = `Yuk gabung di GoSembako! Gunakan kode referral saya: ${referralCode} saat daftar dan dapatkan bonus poin! 🎁`;
+                const referralLink = `${window.location.origin}/akun.html?ref=${encodeURIComponent(referralCode)}`;
+                const message = `Yuk gabung di GoSembako! Gunakan kode referral saya: ${referralCode} saat daftar dan dapatkan bonus poin! 🎁\n${referralLink}`;
                 const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
             };
@@ -266,20 +270,26 @@ async function initReferralWidget(user) {
             renderReferralList(referrals, referralCode, listContainer);
         }
         
-        // Update referral count
-        const userReferrals = referrals.filter(ref => ref.referrer_code === referralCode);
-        const countDisplay = document.getElementById('referral-count');
-        if (countDisplay) {
-            countDisplay.textContent = userReferrals.length;
-        }
-        
-        // Calculate total earned points
-        const totalPoints = userReferrals.reduce((sum, ref) => 
-            sum + (parseInt(ref.reward_points) || REFERRAL_REWARD_POINTS), 0
-        );
-        const pointsDisplay = document.getElementById('referral-points-earned');
-        if (pointsDisplay) {
-            pointsDisplay.textContent = totalPoints;
+        // Update referral count and points from stats API
+        const userId = user.id || user.user_id;
+        if (userId) {
+            try {
+                const apiUrl = CONFIG.getMainApiUrl();
+                const statsResponse = await fetch(`${apiUrl}?action=get_referral_stats&user_id=${encodeURIComponent(userId)}`);
+                const statsData = await statsResponse.json();
+                if (!statsData.error) {
+                    const countDisplay = document.getElementById('referral-count');
+                    if (countDisplay) {
+                        countDisplay.textContent = statsData.referral_count || 0;
+                    }
+                    const pointsDisplay = document.getElementById('referral-points-earned');
+                    if (pointsDisplay) {
+                        pointsDisplay.textContent = statsData.referral_points_earned || 0;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading referral stats:', error);
+            }
         }
         
     } catch (error) {
@@ -289,7 +299,7 @@ async function initReferralWidget(user) {
 
 // Export to window for global access
 window.ReferralUI = {
-    REFERRAL_REWARD_POINTS,
+    DEFAULT_REFERRAL_REWARD_POINTS,
     fetchAllReferrals,
     ensureReferralCode,
     createReferralRecord,

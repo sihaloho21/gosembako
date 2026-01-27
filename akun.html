@@ -195,20 +195,17 @@
                         >
                     </div>
 
-                    <!-- Referral Code Input (Optional) -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">
-                            Kode Referral 
-                            <span class="text-xs font-normal text-gray-500">(Opsional)</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="register-referral-code" 
-                            placeholder="Masukkan kode referral (jika ada)"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-blue-500 transition uppercase"
-                            maxlength="15"
-                        >
-                        <p class="text-xs text-gray-500 mt-1">Dapatkan bonus poin dengan kode referral teman!</p>
+                    <!-- Referral Info (Auto-detected) -->
+                    <div id="referral-info" class="hidden bg-purple-50 border border-purple-200 text-purple-700 px-4 py-3 rounded-xl text-sm">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <p>✨ Anda diajak oleh: <strong id="referrer-name"></strong></p>
+                                <p class="text-xs mt-1">Bonus 50 poin akan Anda dapatkan setelah registrasi!</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Error Message -->
@@ -227,7 +224,7 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span>Pendaftaran berhasil! Silakan login.</span>
+                            <span id="register-success-message">Pendaftaran berhasil! Silakan login.</span>
                         </div>
                     </div>
 
@@ -462,9 +459,10 @@
                         <div class="opacity-90">
                             <p class="font-semibold mb-1">Cara Mendapat Poin:</p>
                             <ul class="space-y-0.5 text-xs opacity-90">
-                                <li>• Bagikan kode referral Anda ke teman</li>
-                                <li>• Teman mendaftar dengan kode Anda</li>
-                                <li>• Anda dapat <strong>50 poin</strong> per referral!</li>
+                                <li>• Teman daftar: <strong>+100 poin</strong></li>
+                                <li>• Teman order pertama: <strong>+50 poin</strong></li>
+                                <li>• Teman order 5x: <strong>+200 poin</strong></li>
+                                <li>• Total 10 referral: <strong>+500 poin bonus</strong></li>
                             </ul>
                         </div>
                     </div>
@@ -808,8 +806,8 @@
     <script src="assets/js/config.min.js"></script>
     <script src="assets/js/api-service.min.js"></script>
     <script src="assets/js/api-helper.js"></script>
-    <script src="assets/js/akun.js"></script>
-    <script src="assets/js/referral-ui.js"></script>
+    <script src="assets/js/akun.min.js"></script>
+    <script src="assets/js/referral-ui.min.js"></script>
 
     
     <script>

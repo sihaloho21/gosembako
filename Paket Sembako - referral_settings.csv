@@ -1,0 +1,8 @@
+setting_key,setting_value,description
+referrer_registration_reward,100,Poin untuk referrer saat referee registrasi
+referee_registration_bonus,50,Poin bonus untuk referee saat registrasi
+referrer_first_order_reward,50,Poin untuk referrer saat referee order pertama
+referrer_fifth_order_reward,200,Poin untuk referrer saat referee order ke-5
+milestone_10_referrals_reward,500,Poin bonus saat total referral 10 orang
+milestone_20_referrals_reward,1000,Poin bonus saat total referral 20 orang
+milestone_50_referrals_reward,3000,Poin bonus saat total referral 50 orang
