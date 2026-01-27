@@ -3,6 +3,17 @@
  * Handles referral code generation, tracking, and UI rendering
  */
 
+// Phone utilities
+const normalizePhoneTo08 = (phone) => {
+    const digits = (phone || '').toString().replace(/[^0-9]/g, '');
+    if (!digits) return '';
+    let core = digits;
+    if (core.startsWith('62')) core = core.slice(2);
+    if (core.startsWith('0')) core = core.slice(1);
+    if (!core.startsWith('8')) return '';
+    return '0' + core;
+};
+
 // Constants
 const DEFAULT_REFERRAL_REWARD_POINTS = 50;
 
