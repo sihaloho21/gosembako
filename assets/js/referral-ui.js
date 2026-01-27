@@ -7,33 +7,6 @@
 const REFERRAL_REWARD_POINTS = 50;
 
 /**
- * Normalize phone number to 08xxxxxxxxxx format
- * @param {string} phone - Phone number in any format
- * @returns {string} Normalized phone number or empty string
- */
-const normalizePhoneTo08 = (phone) => {
-    const digits = (phone || '').toString().replace(/[^0-9]/g, '');
-    if (!digits) return '';
-    let core = digits;
-    if (core.startsWith('62')) core = core.slice(2);
-    if (core.startsWith('0')) core = core.slice(1);
-    if (!core.startsWith('8')) return '';
-    return '0' + core;
-};
-
-/**
- * Generate phone number lookup variants
- * @param {string} phone - Phone number
- * @returns {Array<string>} Array of phone variants
- */
-const phoneLookupVariants = (phone) => {
-    const base = normalizePhoneTo08(phone);
-    if (!base) return [];
-    const core = base.slice(1);
-    return [base, `+62${core}`, `62${core}`, core];
-};
-
-/**
  * Fetch all referrals from the API
  * @returns {Promise<Array>} Array of referral records
  */
@@ -317,8 +290,6 @@ async function initReferralWidget(user) {
 // Export to window for global access
 window.ReferralUI = {
     REFERRAL_REWARD_POINTS,
-    normalizePhoneTo08,
-    phoneLookupVariants,
     fetchAllReferrals,
     ensureReferralCode,
     createReferralRecord,
