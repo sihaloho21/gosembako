@@ -841,7 +841,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         pin: pin,
         tanggal_daftar: today,
         status: 'aktif',
-        total_points: 0,
+        total_points: referralCode ? 50 : 0,  // Bonus 50 poin jika daftar dengan referral
         created_at: now
     };
     
@@ -857,6 +857,23 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     
     if (!createResult || !createResult.success) {
         throw new Error(createResult && createResult.message ? createResult.message : 'Gagal mendaftar');
+    }
+    
+    // Create referral record if user registered with referral code
+    if (referralCode && typeof ReferralUI !== 'undefined' && ReferralUI.createReferralRecord) {
+        try {
+            const recordCreated = await ReferralUI.createReferralRecord(
+                referralCode, 
+                normalizedPhone, 
+                name
+            );
+            if (recordCreated) {
+                console.log('✅ Referral record created');
+            }
+        } catch (error) {
+            console.error('❌ Failed to create referral record:', error);
+            // Don't fail registration if referral record fails
+        }
     }
     
     // Show success
