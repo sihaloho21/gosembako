@@ -253,32 +253,42 @@ const ApiService = {
     
     /**
      * POST request helper
+     * 🔧 FIXED: Use URLSearchParams to avoid CORS preflight
      */
     async post(endpoint, data, options = {}) {
+        // Wrap data in {json: ...} for GAS compatibility
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify(data));
+        
         return this.fetch(endpoint, {
             ...options,
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 ...options.headers
             },
-            body: JSON.stringify(data),
+            body: params.toString(),
             cache: false // Don't cache POST requests by default
         });
     },
     
     /**
      * PATCH request helper
+     * 🔧 FIXED: Use URLSearchParams to avoid CORS preflight
      */
     async patch(endpoint, data, options = {}) {
+        // Wrap data in {json: ...} for GAS compatibility
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify(data));
+        
         return this.fetch(endpoint, {
             ...options,
-            method: 'PATCH',
+            method: 'POST', // Use POST instead of PATCH for GAS
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 ...options.headers
             },
-            body: JSON.stringify(data),
+            body: params.toString(),
             cache: false // Don't cache PATCH requests by default
         });
     },
