@@ -253,32 +253,40 @@ const ApiService = {
     
     /**
      * POST request helper
+     * Uses form-encoded payload with json key to avoid CORS preflight
      */
     async post(endpoint, data, options = {}) {
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify(data));
+
         return this.fetch(endpoint, {
             ...options,
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 ...options.headers
             },
-            body: JSON.stringify(data),
+            body: params,
             cache: false // Don't cache POST requests by default
         });
     },
     
     /**
      * PATCH request helper
+     * Uses form-encoded payload with json key to avoid CORS preflight
      */
     async patch(endpoint, data, options = {}) {
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify(data));
+
         return this.fetch(endpoint, {
             ...options,
             method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 ...options.headers
             },
-            body: JSON.stringify(data),
+            body: params,
             cache: false // Don't cache PATCH requests by default
         });
     },
