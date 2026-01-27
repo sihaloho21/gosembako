@@ -230,12 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Update existing banner
                     console.log('📝 [BANNER-ADMIN] Updating banner:', bannerData);
                     
+                    const params = new URLSearchParams();
+                    params.append('json', JSON.stringify({ data: bannerData }));
+                    
                     const response = await fetch(`${apiUrl}/id/${currentBannerEdit.id}?sheet=banners`, {
                         method: 'PATCH',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        body: JSON.stringify({ data: bannerData })
+                        body: params
                     });
 
                     if (!response.ok) {
@@ -248,12 +251,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Create new banner
                     console.log('➕ [BANNER-ADMIN] Creating banner:', bannerData);
                     
+                    const params = new URLSearchParams();
+                    params.append('json', JSON.stringify({ data: [bannerData] }));
+                    
                     const response = await fetch(`${apiUrl}?sheet=banners`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        body: JSON.stringify({ data: [bannerData] })
+                        body: params
                     });
 
                     if (!response.ok) {

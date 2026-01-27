@@ -308,14 +308,17 @@ async function updateProductGrosir(productId, tiers) {
     const grosirJson = JSON.stringify(tiers);
     
     try {
+        const params = new URLSearchParams();
+        params.append('json', JSON.stringify({ 
+            data: { 
+                grosir: grosirJson
+            } 
+        }));
+        
         const response = await fetch(`${API_URL}/id/${productId}?sheet=${PRODUCTS_SHEET}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                data: { 
-                    grosir: grosirJson
-                } 
-            })
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
         });
         
         const result = await response.json();
